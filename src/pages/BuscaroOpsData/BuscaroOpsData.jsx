@@ -108,14 +108,14 @@ function BuscaroOpsData({ isAdmin }) {
   const mainColumns = [
     { header: 'Captain Name', key: 'Captain Name' },
     { header: 'Captain Personal Mobile', key: 'Captain Personal Mobile' },
-    { header: 'Captain CNIC', key: 'Captain CNIC' },
     { header: 'Company', key: 'Company' },
     { header: 'Route Name', key: 'Route Name' },
     { header: 'Vendor Name', key: 'Vendor Name' },
     { header: 'Bus Number', key: 'Bus Number' },
     { header: 'Bus Type', key: 'Bus_Type' },
-    { header: 'Seats', key: 'Seats' },
     { header: 'Rent', key: 'Rent' },
+    { header: 'GMV', key: 'GMV' },
+    { header: 'Margin', key: 'Margin' },
     { header: 'Status', key: 'Status' }
   ]
 
