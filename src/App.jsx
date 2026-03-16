@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import Layout from './components/Layout/Layout'
+import Layout from './components/LeftPanel'
 import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import BuscaroOpsData from './pages/BuscaroOpsData/BuscaroOpsData'
 import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
+
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth()
