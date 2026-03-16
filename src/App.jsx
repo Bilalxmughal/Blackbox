@@ -26,6 +26,7 @@ function App() {
             </PrivateRoute>
           }>
             <Route index element={<Dashboard />} />
+            <Route path="Dashboard" element={<Dashboard />} />
             <Route path="ops-data" element={<BuscaroOpsData />} />
             <Route path="complaints" element={<ComplaintBoard />} />
             <Route path="backend" element={<BackendSettings />} />
