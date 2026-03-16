@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import Papa from 'papaparse'
-import { RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'lucide-react'
+import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'lucide-react'
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
 import styles from './BuscaroOpsData.module.css'
 
@@ -11,9 +11,11 @@ function BuscaroOpsData({ isAdmin }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
 
-  const sheetCsvUrl =
+  // Google Sheet CSV URL
+  const sheetCsvUrl = 
     'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/gviz/tq?tqx=out:csv&sheet=Sheet1'
 
+  // Columns to display in custom sequence
   const selectedColumnsSequence = [
     'Captain Name',
     'Captain Personal Mobile',
@@ -38,39 +40,30 @@ function BuscaroOpsData({ isAdmin }) {
     'IBAN'
   ]
 
-  // fetchSheetData as useCallback so manual and interval calls are same
-  const fetchSheetData = useCallback(async () => {
-    try {
-      const res = await fetch(sheetCsvUrl)
-      const csvText = await res.text()
-
-      Papa.parse(csvText, {
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          setOpsData(results.data)
-          localStorage.setItem('buscaroOpsData', JSON.stringify(results.data))
-          setLastUpdated(new Date().toLocaleString())
-        }
-      })
-    } catch (err) {
-      console.error('Error fetching Google Sheet:', err)
-      const saved = localStorage.getItem('buscaroOpsData')
-      if (saved) setOpsData(JSON.parse(saved))
-    }
-  }, [sheetCsvUrl])
-
   useEffect(() => {
-    // initial fetch
+    const fetchSheetData = async () => {
+      try {
+        const res = await fetch(sheetCsvUrl)
+        const csvText = await res.text()
+        
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            setOpsData(results.data)
+            localStorage.setItem('buscaroOpsData', JSON.stringify(results.data))
+            setLastUpdated(new Date().toLocaleString())
+          }
+        })
+      } catch (err) {
+        console.error('Error fetching Google Sheet:', err)
+        const saved = localStorage.getItem('buscaroOpsData')
+        if (saved) setOpsData(JSON.parse(saved))
+      }
+    }
+
     fetchSheetData()
-
-    // auto-fetch every 1 minute
-    const interval = setInterval(() => {
-      fetchSheetData()
-    }, 60000) // 60000ms = 1 min
-
-    return () => clearInterval(interval)
-  }, [fetchSheetData])
+  }, [])
 
   const handleDataUploaded = (data) => {
     setOpsData(data)
@@ -95,7 +88,7 @@ function BuscaroOpsData({ isAdmin }) {
   const exportToCSV = () => {
     if (!opsData.length) return
     const headers = selectedColumnsSequence.join(',')
-    const rows = opsData.map(row =>
+    const rows = opsData.map(row => 
       selectedColumnsSequence.map(col => row[col] || '-').join(',')
     )
     const csv = [headers, ...rows].join('\n')
@@ -111,6 +104,7 @@ function BuscaroOpsData({ isAdmin }) {
   const uniqueCompanies = [...new Set(opsData.map(item => item.Company).filter(Boolean))]
   const uniqueRoutes = [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))]
 
+  // Main table columns
   const mainColumns = [
     { header: 'Captain Name', key: 'Captain Name' },
     { header: 'Captain Personal Mobile', key: 'Captain Personal Mobile' },
@@ -119,13 +113,14 @@ function BuscaroOpsData({ isAdmin }) {
     { header: 'Vendor Name', key: 'Vendor Name' },
     { header: 'Bus Number', key: 'Bus Number' },
     { header: 'Bus Type', key: 'Bus_Type' },
-    { header: 'Mileage', key: 'Mileage' },
     { header: 'Rent Days', key: 'Rent Days' },
     { header: 'Rent', key: 'Rent' },
     { header: 'GMV', key: 'GMV' },
     { header: 'Margin', key: 'Margin' },
+    { header: 'Status', key: 'Status' }
   ]
 
+  // Fields to show in expanded details
   const allFields = selectedColumnsSequence.filter(field => field in (opsData[0] || {}))
 
   return (
@@ -145,10 +140,10 @@ function BuscaroOpsData({ isAdmin }) {
           <div className={styles.actions}>
             <button
               className={styles.updateBtn}
-              onClick={fetchSheetData}
+              onClick={() => setShowUpload(!showUpload)}
             >
               <RefreshCw size={18} />
-              Refresh Data
+              Update Data
             </button>
 
             <button
@@ -206,38 +201,40 @@ function BuscaroOpsData({ isAdmin }) {
           </thead>
           <tbody>
             {filteredData.map((row, index) => (
-              <tr key={index} className={styles.mainRow}>
-                <td>
-                  <button
-                    className={styles.expandBtn}
-                    onClick={() => toggleRow(index)}
-                  >
-                    {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
-                </td>
-                {mainColumns.map(col => (
-                  <td key={col.key}>{row[col.key] || '-'}</td>
-                ))}
-              </tr>
+              <>
+                <tr key={index} className={styles.mainRow}>
+                  <td>
+                    <button
+                      className={styles.expandBtn}
+                      onClick={() => toggleRow(index)}
+                    >
+                      {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </td>
+
+                  {mainColumns.map(col => (
+                    <td key={col.key}>{row[col.key] || '-'}</td>
+                  ))}
+                </tr>
+
+                {expandedRows[index] && (
+                  <tr className={styles.expandedRow}>
+                    <td colSpan={mainColumns.length + 1}>
+                      <div className={styles.detailsGrid}>
+                        {allFields.map(field => (
+                          <div key={field} className={styles.detailItem}>
+                            <label>{field}</label>
+                            <span>{row[field] || '-'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>
-
-        {/* Expanded row details */}
-        {filteredData.map((row, index) =>
-          expandedRows[index] ? (
-            <div key={`expanded-${index}`} className={styles.expandedRow}>
-              <div className={styles.detailsGrid}>
-                {allFields.map(field => (
-                  <div key={field} className={styles.detailItem}>
-                    <label>{field}</label>
-                    <span>{row[field] || '-'}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null
-        )}
       </div>
     </div>
   )
