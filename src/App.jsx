@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from "./context/AuthContext"
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/Layout/Layout'
 import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
@@ -8,13 +8,9 @@ import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
 
-// Simple auth check
-function RequireAuth({ children }) {
+function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth()
-  const saved = localStorage.getItem('currentUser')
-  const isLoggedIn = isAuthenticated || !!saved
-  
-  return isLoggedIn ? children : <Navigate to="/login" replace />
+  return isAuthenticated ? children : <Navigate to="/login" />
 }
 
 function App() {
@@ -22,14 +18,11 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public route */}
           <Route path="/login" element={<Login />} />
-          
-          {/* Protected routes with Layout */}
           <Route path="/" element={
-            <RequireAuth>
+            <PrivateRoute>
               <Layout />
-            </RequireAuth>
+            </PrivateRoute>
           }>
             <Route index element={<Dashboard />} />
             <Route path="ops-data" element={<BuscaroOpsData />} />
@@ -37,9 +30,6 @@ function App() {
             <Route path="backend" element={<BackendSettings />} />
             <Route path="users" element={<UserManagement />} />
           </Route>
-          
-          {/* Redirect unknown to login */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

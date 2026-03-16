@@ -68,12 +68,6 @@ function Dashboard() {
     { title: 'Resolved', value: analytics.closedTickets, icon: CheckCircle, color: '#6bcf7f' },
   ]
 
-  // Safe status class function
-  const getStatusClass = (status) => {
-    if (!status) return styles.Open
-    return styles[status.replace(' ', '')] || styles.Open
-  }
-
   return (
     <div className={styles.dashboard}>
       <div className={styles.welcome}>
@@ -122,10 +116,10 @@ function Dashboard() {
           <div className={styles.activityList}>
             {complaints.slice(0, 5).map(comp => (
               <div key={comp.id} className={styles.activityItem}>
-                <span className={styles.ticketId}>{comp.ticketNo || 'N/A'}</span>
-                <p>{comp.issueDetails?.substring(0, 50) || 'No details'}...</p>
-                <span className={getStatusClass(comp.ticketStatus)}>
-                  {comp.ticketStatus || 'Open'}
+                <span className={styles.ticketId}>{comp.ticketNo}</span>
+                <p>{comp.issueDetails?.substring(0, 50)}...</p>
+                <span className={styles[comp.ticketStatus.replace(' ', '')]}>
+                  {comp.ticketStatus}
                 </span>
               </div>
             ))}
