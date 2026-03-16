@@ -91,32 +91,35 @@
   border-color: #6bcf7f;
 }
 
-/* Add to existing file */
+/* Form ko compact karo */
+.form {
+  width: 100%;
+}
 
 .formGrid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  margin-bottom: 20px;
+  gap: 15px;                    /* 20 se 15 kiya */
+  margin-bottom: 15px;          /* 20 se 15 kiya */
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;                     /* 8 se 5 kiya */
 }
 
 .formGroupFull {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
+  gap: 5px;
+  margin-bottom: 15px;          /* 20 se 15 kiya */
 }
 
 .formGroup label,
 .formGroupFull label {
-  font-size: 14px;
+  font-size: 13px;              /* 14 se 13 kiya */
   font-weight: 500;
   color: #333;
 }
@@ -124,56 +127,35 @@
 .formGroup input,
 .formGroup select,
 .formGroupFull textarea {
-  padding: 12px;
+  padding: 10px 12px;           /* 12 se 10px kiya */
   border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s;
+  border-radius: 6px;           /* 8 se 6 kiya */
+  font-size: 13px;              /* 14 se 13 kiya */
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.formGroup input:focus,
-.formGroup select:focus,
-.formGroupFull textarea:focus {
-  outline: none;
-  border-color: #00d4ff;
-}
-
-.readOnly {
-  background: #f5f6fa;
-  color: #666;
+.formGroupFull textarea {
+  min-height: 80px;             /* Add kiya */
+  resize: vertical;             /* Add kiya */
 }
 
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 15px;
-  margin-top: 20px;
-  padding-top: 20px;
+  gap: 10px;                    /* 15 se 10 kiya */
+  margin-top: 15px;             /* 20 se 15 kiya */
+  padding-top: 15px;            /* 20 se 15 kiya */
   border-top: 1px solid #eee;
+  flex-shrink: 0;               /* Add kiya */
 }
 
-.cancelBtn {
-  padding: 12px 24px;
-  background: #f5f6fa;
-  color: #666;
-  border-radius: 8px;
-  font-weight: 500;
-}
-
-.cancelBtn:hover {
-  background: #e0e0e0;
-}
-
+.cancelBtn,
 .submitBtn {
-  padding: 12px 24px;
-  background: #00d4ff;
-  color: white;
-  border-radius: 8px;
+  padding: 10px 20px;           /* 12px 24px se 10px 20px kiya */
+  border-radius: 6px;
+  font-size: 13px;              /* Add kiya */
   font-weight: 500;
-}
-
-.submitBtn:hover {
-  background: #00b8d9;
 }
 
 .statusBadge {

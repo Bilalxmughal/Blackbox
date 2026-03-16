@@ -4,26 +4,28 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.6);
   display: flex;
-  align-items: center;
+  align-items: flex-start;    /* center se flex-start kiya */
   justify-content: center;
-  z-index: 9999;        /* Bahot high - left panel se upar */
+  z-index: 9999;
   padding: 20px;
-  overflow-y: auto;     /* Scroll agar content zyada ho */
+  overflow-y: auto;           /* Overlay scroll kare */
 }
 
 .modal {
   background: white;
   border-radius: 12px;
   width: 100%;
-  max-height: 90vh;
+  max-width: 800px;           /* Fixed max-width */
+  max-height: calc(100vh - 40px);  /* Viewport se padding minus */
   overflow: hidden;
   display: flex;
   flex-direction: column;
   animation: slideIn 0.3s ease;
-  position: relative;   /* Add kiya */
-  margin-left: 0;       /* Ensure no margin */
+  position: relative;
+  margin-top: 20px;           /* Top se space */
+  margin-bottom: 20px;        /* Bottom se space */
 }
 
 @keyframes slideIn {
@@ -39,14 +41,8 @@
 
 .modal.small { max-width: 400px; }
 .modal.medium { max-width: 600px; }
-.modal.large { 
-  max-width: 900px; 
-  width: 90%;          /* Responsive width */
-}
-.modal.xlarge { 
-  max-width: 1200px; 
-  width: 95%;          /* Responsive width */
-}
+.modal.large { max-width: 800px; }   /* 900 se 800 kiya */
+.modal.xlarge { max-width: 1000px; } /* 1200 se 1000 kiya */
 
 .modalHeader {
   display: flex;
@@ -54,11 +50,13 @@
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid #eee;
+  flex-shrink: 0;             /* Header shrink na ho */
 }
 
 .modalHeader h3 {
   margin: 0;
   color: #1a1a2e;
+  font-size: 18px;
 }
 
 .closeBtn {
@@ -68,6 +66,7 @@
   padding: 5px;
   border-radius: 4px;
   transition: all 0.2s;
+  cursor: pointer;
 }
 
 .closeBtn:hover {
@@ -77,7 +76,7 @@
 
 .modalBody {
   padding: 20px;
-  overflow-y: auto;
+  overflow-y: auto;           /* Body scroll kare */
   flex: 1;
-  max-height: calc(90vh - 80px);  /* Header height adjust */
+  max-height: calc(100vh - 140px);  /* Header + padding adjust */
 }

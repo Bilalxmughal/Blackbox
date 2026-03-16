@@ -292,7 +292,7 @@ function ComplaintBoard() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Add New Complaint"
-        size="large"
+        size="medium"
       >
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGrid}>
