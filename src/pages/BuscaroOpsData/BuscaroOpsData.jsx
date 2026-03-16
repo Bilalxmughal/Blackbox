@@ -38,32 +38,19 @@ function BuscaroOpsData({ isAdmin }) {
     'IBAN'
   ]
 
-  // Format date to DD-MM-YYYY hh:MM AM/PM
-  const formatDate = (date) => {
-    if (!date) return ''
-    const d = new Date(date)
-    const day = String(d.getDate()).padStart(2, '0')
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const year = d.getFullYear()
-    let hours = d.getHours()
-    const minutes = String(d.getMinutes()).padStart(2, '0')
-    const ampm = hours >= 12 ? 'PM' : 'AM'
-    hours = hours % 12
-    hours = hours ? hours : 12
-    return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`
-  }
-
+  // fetchSheetData as useCallback so manual and interval calls are same
   const fetchSheetData = useCallback(async () => {
     try {
       const res = await fetch(sheetCsvUrl)
       const csvText = await res.text()
+
       Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
           setOpsData(results.data)
           localStorage.setItem('buscaroOpsData', JSON.stringify(results.data))
-          setLastUpdated(new Date())
+          setLastUpdated(new Date().toLocaleString())
         }
       })
     } catch (err) {
@@ -74,8 +61,14 @@ function BuscaroOpsData({ isAdmin }) {
   }, [sheetCsvUrl])
 
   useEffect(() => {
+    // initial fetch
     fetchSheetData()
-    const interval = setInterval(fetchSheetData, 60000) // auto refresh every 1 min
+
+    // auto-fetch every 1 minute
+    const interval = setInterval(() => {
+      fetchSheetData()
+    }, 60000) // 60000ms = 1 min
+
     return () => clearInterval(interval)
   }, [fetchSheetData])
 
@@ -83,11 +76,14 @@ function BuscaroOpsData({ isAdmin }) {
     setOpsData(data)
     localStorage.setItem('buscaroOpsData', JSON.stringify(data))
     setShowUpload(false)
-    setLastUpdated(new Date())
+    setLastUpdated(new Date().toLocaleString())
   }
 
   const toggleRow = (id) => {
-    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }))
+    setExpandedRows(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }))
   }
 
   const filteredData = opsData.filter(row =>
@@ -123,51 +119,51 @@ function BuscaroOpsData({ isAdmin }) {
     { header: 'Vendor Name', key: 'Vendor Name' },
     { header: 'Bus Number', key: 'Bus Number' },
     { header: 'Bus Type', key: 'Bus_Type' },
+    { header: 'Mileage', key: 'Mileage' },
     { header: 'Rent Days', key: 'Rent Days' },
     { header: 'Rent', key: 'Rent' },
     { header: 'GMV', key: 'GMV' },
     { header: 'Margin', key: 'Margin' },
   ]
 
-  // Fields to show in expanded details
   const allFields = selectedColumnsSequence.filter(field => field in (opsData[0] || {}))
-
-  // Add unique key to each row for expand toggle
-  const filteredDataWithKey = filteredData.map(row => {
-    const uniqueKey = `${row['Bus Number'] || 'noBus'}_${row['Captain Name'] || 'noCaptain'}`
-    return { ...row, uniqueKey }
-  })
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
           <h1>Buscaro Ops Data</h1>
+          <p>Upload and manage fleet operations data</p>
           {lastUpdated && (
             <p style={{ fontSize: '12px', color: '#888' }}>
-              Last updated: {formatDate(lastUpdated)}
+              Last updated: {lastUpdated}
             </p>
           )}
         </div>
 
-        <div className={styles.actions}>
-          <button className={styles.updateBtn} onClick={fetchSheetData}>
-            <RefreshCw size={18} />
-            Refresh Data
-          </button>
+        {isAdmin && (
+          <div className={styles.actions}>
+            <button
+              className={styles.updateBtn}
+              onClick={fetchSheetData}
+            >
+              <RefreshCw size={18} />
+              Refresh Data
+            </button>
 
-          <button
-            className={styles.exportBtn}
-            onClick={exportToCSV}
-            disabled={opsData.length === 0}
-          >
-            <Download size={18} />
-            Export
-          </button>
-        </div>
+            <button
+              className={styles.exportBtn}
+              onClick={exportToCSV}
+              disabled={opsData.length === 0}
+            >
+              <Download size={18} />
+              Export
+            </button>
+          </div>
+        )}
       </div>
 
-      {showUpload && (
+      {showUpload && isAdmin && (
         <div className={styles.uploadSection}>
           <ExcelUploader onDataUploaded={handleDataUploaded} />
         </div>
@@ -209,14 +205,14 @@ function BuscaroOpsData({ isAdmin }) {
             </tr>
           </thead>
           <tbody>
-            {filteredDataWithKey.map(row => (
-              <tr key={row.uniqueKey} className={styles.mainRow}>
+            {filteredData.map((row, index) => (
+              <tr key={index} className={styles.mainRow}>
                 <td>
                   <button
                     className={styles.expandBtn}
-                    onClick={() => toggleRow(row.uniqueKey)}
+                    onClick={() => toggleRow(index)}
                   >
-                    {expandedRows[row.uniqueKey] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                 </td>
                 {mainColumns.map(col => (
@@ -224,26 +220,24 @@ function BuscaroOpsData({ isAdmin }) {
                 ))}
               </tr>
             ))}
-
-            {/* Expanded rows */}
-            {filteredDataWithKey.map(row =>
-              expandedRows[row.uniqueKey] ? (
-                <tr key={`expanded-${row.uniqueKey}`} className={styles.expandedRow}>
-                  <td colSpan={mainColumns.length + 1}>
-                    <div className={styles.detailsGrid}>
-                      {allFields.map(field => (
-                        <div key={field} className={styles.detailItem}>
-                          <label>{field}</label>
-                          <span>{row[field] || '-'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ) : null
-            )}
           </tbody>
         </table>
+
+        {/* Expanded row details */}
+        {filteredData.map((row, index) =>
+          expandedRows[index] ? (
+            <div key={`expanded-${index}`} className={styles.expandedRow}>
+              <div className={styles.detailsGrid}>
+                {allFields.map(field => (
+                  <div key={field} className={styles.detailItem}>
+                    <label>{field}</label>
+                    <span>{row[field] || '-'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null
+        )}
       </div>
     </div>
   )
