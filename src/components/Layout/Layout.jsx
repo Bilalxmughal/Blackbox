@@ -1,10 +1,9 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Users, Database, LayoutDashboard, LogOut } from 'lucide-react';
-import styles from './Layout.module.css';
+import { Link, useLocation } from 'react-router-dom'
+import { Users, Database, LayoutDashboard, LogOut } from 'lucide-react'
+import styles from './Layout.module.css'
 
 function Layout({ children, user, onLogout }) {
-  const location = useLocation();
+  const location = useLocation()
 
   return (
     <div className={styles.layout}>
@@ -57,7 +56,7 @@ function Layout({ children, user, onLogout }) {
         {children}
       </main>
     </div>
-  );
+  )
 }
 
-export default Layout;
+export default Layout
