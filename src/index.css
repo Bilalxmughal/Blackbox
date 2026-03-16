@@ -4,22 +4,10 @@
   box-sizing: border-box;
 }
 
-:root {
-  /* CSS Variables jo aapke code mein use ho rahe hain */
-  --accent: #00d4ff;
-  --accent-bg: rgba(0, 212, 255, 0.1);
-  --accent-border: rgba(0, 212, 255, 0.3);
-  --border: #e0e0e0;
-  --text-h: #1a1a2e;
-  --social-bg: #f8f9fa;
-  --shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #f5f6fa;
   color: #1a1a2e;
-  line-height: 1.6;
 }
 
 a {
@@ -31,12 +19,10 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
-  font-family: inherit;
 }
 
 input, select, textarea {
   font-family: inherit;
-  outline: none;
 }
 
 /* Scrollbar Styling */
