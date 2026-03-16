@@ -1,33 +1,39 @@
-// Add to menuItems array
-const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Buscaro Ops Data', path: '/ops-data', icon: Database },
-  { name: 'Complaint Board', path: '/complaints', icon: ClipboardList },
-  { name: 'User Management', path: '/users', icon: Users },
-  { name: 'Backend Settings', path: '/backend', icon: Settings },
-]
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from "./context/AuthContext"
+import Layout from './components/Layout/Layout'
+import Login from './pages/Login/Login'
+import Dashboard from './pages/Dashboard/Dashboard'
+import BuscaroOpsData from './pages/BuscaroOpsData/BuscaroOpsData'
+import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
+import BackendSettings from './pages/BackendSettings/BackendSettings'
+import UserManagement from './pages/UserManagement/UserManagement'
 
-// Add logout button in LeftPanel
-import { useAuth } from '../../context/AuthContext'
-import { LogOut } from 'lucide-react'
+function PrivateRoute({ children }) {
+  const { isAuthenticated } = useAuth()
+  return isAuthenticated ? children : <Navigate to="/login" />
+}
 
-function LeftPanel() {
-  const { currentUser, logout } = useAuth()
-  // ... existing code
-
+function App() {
   return (
-    <aside className={styles.leftPanel}>
-      {/* ... existing code */}
-      
-      <div className={styles.userSection}>
-        <div className={styles.userInfo}>
-          <span>{currentUser?.name}</span>
-          <small>{currentUser?.department}</small>
-        </div>
-        <button onClick={logout} className={styles.logoutBtn}>
-          <LogOut size={18} />
-        </button>
-      </div>
-    </aside>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={
+            <PrivateRoute>
+              <Layout />
+            </PrivateRoute>
+          }>
+            <Route index element={<Dashboard />} />
+            <Route path="ops-data" element={<BuscaroOpsData />} />
+            <Route path="complaints" element={<ComplaintBoard />} />
+            <Route path="backend" element={<BackendSettings />} />
+            <Route path="users" element={<UserManagement />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
+
+export default App
