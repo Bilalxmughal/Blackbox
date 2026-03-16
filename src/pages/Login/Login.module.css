@@ -3,104 +3,86 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-  padding: 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
 .loginBox {
   background: white;
   padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   width: 100%;
   max-width: 400px;
-  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
 }
 
 .loginBox h1 {
   color: #1a1a2e;
-  font-size: 28px;
-  margin-bottom: 5px;
+  text-align: center;
+  margin-bottom: 8px;
 }
 
-.loginBox h2 {
-  color: #00d4ff;
-  font-size: 16px;
-  font-weight: 500;
-  margin-bottom: 30px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+.loginBox > p {
+  color: #666;
+  text-align: center;
+  margin-bottom: 24px;
 }
 
 .error {
-  background: #ff6b6b20;
-  color: #ff6b6b;
+  background: #ffebee;
+  color: #c62828;
   padding: 12px;
   border-radius: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   font-size: 14px;
 }
 
-.formGroup {
-  text-align: left;
-  margin-bottom: 20px;
+.loginBox form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.formGroup label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-}
-
-.formGroup input {
-  width: 100%;
-  padding: 12px 15px;
+.loginBox input {
+  padding: 14px;
   border: 2px solid #e0e0e0;
   border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s;
+  font-size: 15px;
+  transition: border-color 0.3s;
 }
 
-.formGroup input:focus {
-  outline: none;
+.loginBox input:focus {
   border-color: #00d4ff;
 }
 
-.loginBtn {
-  width: 100%;
+.loginBox button {
   padding: 14px;
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  background: linear-gradient(135deg, #00d4ff, #00b8d9);
   color: white;
   border-radius: 8px;
   font-size: 16px;
   font-weight: 600;
-  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: 8px;
+  transition: transform 0.2s;
 }
 
-.loginBtn:hover {
+.loginBox button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,212,255,0.3);
 }
 
-.demo {
-  margin-top: 30px;
+.demoAccounts {
+  margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #e0e0e0;
+  text-align: center;
 }
 
-.demo p {
+.demoAccounts p {
   color: #666;
   font-size: 13px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
-.demo code {
-  background: #f5f6fa;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+.demoAccounts small {
   color: #00d4ff;
-  font-family: monospace;
+  font-weight: 600;
 }

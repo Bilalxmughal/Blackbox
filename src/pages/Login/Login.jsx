@@ -1,68 +1,68 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext'
-import styles from './Login.module.css'
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { defaultUsers } from '../../data/users';
+import styles from './Login.module.css';
 
-function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const { login } = useAuth()
-  const navigate = useNavigate()
+function Login({ onLogin }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
-    e.preventDefault()
-    const result = login(email, password)
-    if (result.success) {
-      navigate('/')
+    e.preventDefault();
+    
+    // Check against default users or localStorage users
+    const savedUsers = localStorage.getItem('users');
+    const users = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
+    
+    const user = users.find(u => u.email === email && u.password === password);
+    
+    if (user) {
+      if (user.status === 'inactive') {
+        setError('Your account is inactive. Contact Super Admin.');
+        return;
+      }
+      onLogin(user);
+      navigate('/');
     } else {
-      setError(result.error)
+      setError('Invalid email or password');
     }
-  }
+  };
 
   return (
     <div className={styles.loginContainer}>
       <div className={styles.loginBox}>
-        <h1>BusCaro - BlackBox</h1>
-        <h2>CRM Login</h2>
+        <h1>Buscaro</h1>
+        <p>Sign in to your account</p>
         
         {error && <div className={styles.error}>{error}</div>}
         
         <form onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-            <label>Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@buscaro.com"
-              required
-            />
-          </div>
-          
-          <div className={styles.formGroup}>
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••"
-              required
-            />
-          </div>
-          
-          <button type="submit" className={styles.loginBtn}>
-            Login
-          </button>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Sign In</button>
         </form>
         
-        <div className={styles.demo}>
-          <p>Demo Credentials:</p>
-          <code>admin@buscaro.com / admin123</code>
+        <div className={styles.demoAccounts}>
+          <p>Demo Accounts:</p>
+          <small>super@buscaro.com / admin123</small>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default Login
+export default Login;
