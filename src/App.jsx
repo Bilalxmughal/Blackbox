@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import Layout from './components/Layout/Layout'
 import Login from './pages/Login/Login'
@@ -8,10 +8,15 @@ import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
 
-
-function PrivateRoute({ children }) {
+// PrivateRoute component - check auth and render outlet
+function PrivateRoute() {
   const { isAuthenticated } = useAuth()
-  return isAuthenticated ? children : <Navigate to="/login" />
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+  
+  return <Outlet />
 }
 
 function App() {
@@ -19,19 +24,22 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public route */}
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={
-            <PrivateRoute>
-              <Layout />
-            </PrivateRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="Dashboard" element={<Dashboard />} />
-            <Route path="ops-data" element={<BuscaroOpsData />} />
-            <Route path="complaints" element={<ComplaintBoard />} />
-            <Route path="backend" element={<BackendSettings />} />
-            <Route path="users" element={<UserManagement />} />
+          
+          {/* Protected routes */}
+          <Route element={<PrivateRoute />}>
+            <Route element={<Layout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="ops-data" element={<BuscaroOpsData />} />
+              <Route path="complaints" element={<ComplaintBoard />} />
+              <Route path="backend" element={<BackendSettings />} />
+              <Route path="users" element={<UserManagement />} />
+            </Route>
           </Route>
+          
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
