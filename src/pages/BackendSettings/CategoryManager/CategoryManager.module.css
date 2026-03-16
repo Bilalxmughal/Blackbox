@@ -1,0 +1,277 @@
+.container {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sectionHeader {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.sectionHeader h2 {
+  color: #1a1a2e;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.sectionHeader p {
+  color: #888;
+  font-size: 13px;
+}
+
+.addSection {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.addSection h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.inlineForm {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.inlineForm input,
+.inlineForm select {
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  flex: 1;
+}
+
+.inlineForm input:focus,
+.inlineForm select:focus {
+  outline: none;
+  border-color: #00d4ff;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: #6bcf7f;
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.categoriesList h3 {
+  color: #1a1a2e;
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.categoryCard {
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.categoryCard:hover {
+  border-color: #e0e0e0;
+}
+
+.catHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: white;
+}
+
+.expandBtn {
+  width: 32px;
+  height: 32px;
+  background: #f8f9fa;
+  color: #666;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.expandBtn:hover {
+  background: #00d4ff;
+  color: white;
+}
+
+.catInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.codeBadge {
+  background: #00d4ff;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.catInfo h4 {
+  color: #1a1a2e;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.subCount {
+  font-size: 12px;
+  color: #888;
+  background: #f0f0f0;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.catActions {
+  display: flex;
+  gap: 8px;
+}
+
+.iconBtn,
+.iconBtnDanger {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.iconBtn {
+  background: #ffd93d20;
+  color: #b8860b;
+}
+
+.iconBtn:hover {
+  background: #ffd93d;
+}
+
+.iconBtnDanger {
+  background: #ff6b6b20;
+  color: #ff6b6b;
+}
+
+.iconBtnDanger:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+.editForm {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+}
+
+.editForm input {
+  padding: 8px 12px;
+  border: 2px solid #00d4ff;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+/* Sub-categories */
+.subCategories {
+  padding: 0 20px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.noSub {
+  padding: 20px;
+  text-align: center;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.subItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  margin-top: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.subName {
+  color: #444;
+  font-size: 14px;
+}
+
+.subEditInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #00d4ff;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.subActions {
+  display: flex;
+  gap: 6px;
+}
+
+.subBtn,
+.subBtnDanger {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.subBtn {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.subBtn:hover {
+  background: #ffd93d;
+  color: white;
+}
+
+.subBtnDanger {
+  background: #ff6b6b20;
+  color: #ff6b6b;
+}
+
+.subBtnDanger:hover {
+  background: #ff6b6b;
+  color: white;
+}

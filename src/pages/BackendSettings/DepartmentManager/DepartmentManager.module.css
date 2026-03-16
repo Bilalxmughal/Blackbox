@@ -1,0 +1,211 @@
+.container {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.sectionHeader h2 {
+  color: #1a1a2e;
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.sectionHeader p {
+  color: #888;
+  font-size: 13px;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #00d4ff;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.addBtn:hover {
+  background: #00b8d9;
+  transform: translateY(-1px);
+}
+
+.addForm {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.addForm input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.addForm input:focus {
+  outline: none;
+  border-color: #00d4ff;
+}
+
+.saveBtn {
+  padding: 12px 24px;
+  background: #6bcf7f;
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.cancelBtn {
+  padding: 12px 24px;
+  background: #f0f0f0;
+  color: #666;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 24px;
+}
+
+.searchBox input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+}
+
+.searchBox input:focus {
+  outline: none;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.statBox {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.statNumber {
+  display: block;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: #888;
+}
+
+.deptGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.deptCard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: white;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.deptCard:hover {
+  border-color: #00d4ff;
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.1);
+}
+
+.deptInfo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.deptIcon {
+  width: 44px;
+  height: 44px;
+  background: #e6f9ff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deptInfo h4 {
+  color: #1a1a2e;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.userCount {
+  font-size: 12px;
+  color: #888;
+}
+
+.deleteBtn {
+  width: 36px;
+  height: 36px;
+  background: #ff6b6b20;
+  color: #ff6b6b;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.deleteBtn:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #aaa;
+}
+
+.emptyState p {
+  margin-top: 16px;
+  font-size: 15px;
+}
