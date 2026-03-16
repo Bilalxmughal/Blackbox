@@ -1,8 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import Layout from './components/Layout/Layout'
-import Layout from './components/LeftPanel'
-import Layout from './context'
 import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import BuscaroOpsData from './pages/BuscaroOpsData/BuscaroOpsData'
