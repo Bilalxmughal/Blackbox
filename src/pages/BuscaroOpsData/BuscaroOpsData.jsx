@@ -38,19 +38,30 @@ function BuscaroOpsData({ isAdmin }) {
     'IBAN'
   ]
 
-  // fetchSheetData as useCallback so manual and interval calls are same
+  // Format date to DD-MM-YYYY HH:MM
+  const formatDate = (date) => {
+    if (!date) return ''
+    const d = new Date(date)
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${day}-${month}-${year} ${hours}:${minutes}`
+  }
+
+  // Fetch sheet data
   const fetchSheetData = useCallback(async () => {
     try {
       const res = await fetch(sheetCsvUrl)
       const csvText = await res.text()
-
       Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
           setOpsData(results.data)
           localStorage.setItem('buscaroOpsData', JSON.stringify(results.data))
-          setLastUpdated(new Date().toLocaleString())
+          setLastUpdated(new Date())
         }
       })
     } catch (err) {
@@ -61,14 +72,8 @@ function BuscaroOpsData({ isAdmin }) {
   }, [sheetCsvUrl])
 
   useEffect(() => {
-    // initial fetch
     fetchSheetData()
-
-    // auto-fetch every 1 minute
-    const interval = setInterval(() => {
-      fetchSheetData()
-    }, 60000) // 60000ms = 1 min
-
+    const interval = setInterval(fetchSheetData, 60000) // auto refresh every 1 min
     return () => clearInterval(interval)
   }, [fetchSheetData])
 
@@ -76,14 +81,11 @@ function BuscaroOpsData({ isAdmin }) {
     setOpsData(data)
     localStorage.setItem('buscaroOpsData', JSON.stringify(data))
     setShowUpload(false)
-    setLastUpdated(new Date().toLocaleString())
+    setLastUpdated(new Date())
   }
 
   const toggleRow = (id) => {
-    setExpandedRows(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }))
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
   const filteredData = opsData.filter(row =>
@@ -119,7 +121,6 @@ function BuscaroOpsData({ isAdmin }) {
     { header: 'Vendor Name', key: 'Vendor Name' },
     { header: 'Bus Number', key: 'Bus Number' },
     { header: 'Bus Type', key: 'Bus_Type' },
-    { header: 'Mileage', key: 'Mileage' },
     { header: 'Rent Days', key: 'Rent Days' },
     { header: 'Rent', key: 'Rent' },
     { header: 'GMV', key: 'GMV' },
@@ -133,37 +134,31 @@ function BuscaroOpsData({ isAdmin }) {
       <div className={styles.header}>
         <div>
           <h1>Buscaro Ops Data</h1>
-          <p>Upload and manage fleet operations data</p>
           {lastUpdated && (
             <p style={{ fontSize: '12px', color: '#888' }}>
-              Last updated: {lastUpdated}
+              Last updated: {formatDate(lastUpdated)}
             </p>
           )}
         </div>
 
-        {isAdmin && (
-          <div className={styles.actions}>
-            <button
-              className={styles.updateBtn}
-              onClick={fetchSheetData}
-            >
-              <RefreshCw size={18} />
-              Refresh Data
-            </button>
+        <div className={styles.actions}>
+          <button className={styles.updateBtn} onClick={fetchSheetData}>
+            <RefreshCw size={18} />
+            Refresh Data
+          </button>
 
-            <button
-              className={styles.exportBtn}
-              onClick={exportToCSV}
-              disabled={opsData.length === 0}
-            >
-              <Download size={18} />
-              Export
-            </button>
-          </div>
-        )}
+          <button
+            className={styles.exportBtn}
+            onClick={exportToCSV}
+            disabled={opsData.length === 0}
+          >
+            <Download size={18} />
+            Export
+          </button>
+        </div>
       </div>
 
-      {showUpload && isAdmin && (
+      {showUpload && (
         <div className={styles.uploadSection}>
           <ExcelUploader onDataUploaded={handleDataUploaded} />
         </div>
