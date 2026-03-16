@@ -8,12 +8,46 @@ import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
 
-// PrivateRoute component - check auth and render outlet
+// Loading component
+function LoadingScreen() {
+  return (
+    <div style={{
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: '100vh',
+      background: '#1a1a2e'
+    }}>
+      <div style={{ color: '#00d4ff', fontSize: '20px' }}>Loading...</div>
+    </div>
+  )
+}
+
+// PrivateRoute with loading check
 function PrivateRoute() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, loading } = useAuth()
+  
+  if (loading) {
+    return <LoadingScreen />
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
+  }
+  
+  return <Outlet />
+}
+
+// Public route - redirect if already logged in
+function PublicRoute() {
+  const { isAuthenticated, loading } = useAuth()
+  
+  if (loading) {
+    return <LoadingScreen />
+  }
+  
+  if (isAuthenticated) {
+    return <Navigate to="/" replace />
   }
   
   return <Outlet />
@@ -24,8 +58,10 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public route */}
-          <Route path="/login" element={<Login />} />
+          {/* Public routes */}
+          <Route element={<PublicRoute />}>
+            <Route path="/login" element={<Login />} />
+          </Route>
           
           {/* Protected routes */}
           <Route element={<PrivateRoute />}>
