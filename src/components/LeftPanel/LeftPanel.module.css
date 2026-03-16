@@ -99,3 +99,48 @@
   color: #666;
   text-align: center;
 }
+
+/* Add at the end of LeftPanel.module.css */
+
+.userSection {
+  padding: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.userInfo span {
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.userInfo small {
+  color: #00d4ff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.logoutBtn {
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.logoutBtn:hover {
+  background: #ff6b6b;
+}

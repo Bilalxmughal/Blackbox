@@ -1,0 +1,276 @@
+.detailContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.headerInfo {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.infoCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8f9fa;
+  padding: 15px 20px;
+  border-radius: 10px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.infoCard svg {
+  color: #00d4ff;
+}
+
+.infoCard div {
+  display: flex;
+  flex-direction: column;
+}
+
+.infoCard label {
+  font-size: 12px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoCard span {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.Open {
+  background: #ff6b6b20;
+  color: #ff6b6b;
+}
+
+.InProgress {
+  background: #ffd93d20;
+  color: #b8860b;
+}
+
+.Closed {
+  background: #6bcf7f20;
+  color: #6bcf7f;
+}
+
+.mainContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+.leftPanel,
+.rightPanel {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 25px;
+}
+
+.rightPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  margin-bottom: 25px;
+}
+
+.section h3 {
+  color: #1a1a2e;
+  font-size: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.infoItem {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.infoItem label {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+}
+
+.infoItem span {
+  font-size: 14px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+
+.issueText {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.additionalInfo {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.additionalInfo label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.additionalInfo p {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  color: #555;
+  font-size: 14px;
+}
+
+.reassignForm {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.reassignForm select {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.reassignBtn {
+  background: #9b59b6;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.reassignBtn:hover {
+  background: #8e44ad;
+}
+
+.rightPanel h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #1a1a2e;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.commentsList {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+  margin-bottom: 20px;
+}
+
+.noComments {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+}
+
+.comment {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  border-left: 3px solid #00d4ff;
+}
+
+.comment.system {
+  border-left-color: #9b59b6;
+  background: #f3e5f5;
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.commentBy {
+  font-weight: 600;
+  color: #1a1a2e;
+  font-size: 14px;
+}
+
+.commentTime {
+  font-size: 12px;
+  color: #888;
+}
+
+.commentText {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.commentForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commentForm textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  resize: none;
+  font-size: 14px;
+}
+
+.commentForm button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #00d4ff;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.commentForm button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    grid-template-columns: 1fr;
+  }
+  
+  .infoGrid {
+    grid-template-columns: 1fr;
+  }
+}

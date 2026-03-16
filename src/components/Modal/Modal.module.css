@@ -71,3 +71,10 @@
   overflow-y: auto;
   flex: 1;
 }
+
+/* Add to existing Modal.module.css */
+
+.modal.xlarge {
+  max-width: 1400px;
+  width: 95%;
+}

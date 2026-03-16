@@ -1,53 +1,79 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { 
   TrendingUp, 
   AlertCircle, 
   CheckCircle, 
   Clock,
   Users,
-  Bus
+  Bus,
+  Building2,
+  Route
 } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 import styles from './Dashboard.module.css'
 
 function Dashboard() {
-  const [stats, setStats] = useState({
-    totalComplaints: 0,
-    openTickets: 0,
-    resolvedToday: 0,
-    pendingTickets: 0,
-    totalVehicles: 0,
-    totalCaptains: 0
-  })
+  const { currentUser } = useAuth()
+  const [complaints, setComplaints] = useState([])
+  const [opsData, setOpsData] = useState([])
 
   useEffect(() => {
-    // Load from localStorage or set default
-    const savedStats = localStorage.getItem('dashboardStats')
-    if (savedStats) {
-      setStats(JSON.parse(savedStats))
-    } else {
-      setStats({
-        totalComplaints: 156,
-        openTickets: 23,
-        resolvedToday: 8,
-        pendingTickets: 15,
-        totalVehicles: 142,
-        totalCaptains: 89
-      })
-    }
+    const savedComplaints = localStorage.getItem('complaints')
+    const savedOpsData = localStorage.getItem('buscaroOpsData')
+    
+    if (savedComplaints) setComplaints(JSON.parse(savedComplaints))
+    if (savedOpsData) setOpsData(JSON.parse(savedOpsData))
   }, [])
 
+  // Analytics calculations
+  const analytics = useMemo(() => {
+    // Total records
+    const totalRecords = opsData.length
+    
+    // Unique companies count
+    const uniqueCompanies = [...new Set(opsData.map(item => item.company).filter(Boolean))]
+    const companyCount = uniqueCompanies.length
+    
+    // Routes per company
+    const companyRoutes = {}
+    uniqueCompanies.forEach(company => {
+      const companyData = opsData.filter(item => item.company === company)
+      const routes = [...new Set(companyData.map(item => item.routeName).filter(Boolean))]
+      companyRoutes[company] = routes.length
+    })
+
+    // Complaint stats
+    const totalComplaints = complaints.length
+    const openTickets = complaints.filter(c => c.ticketStatus === 'Open').length
+    const inProgressTickets = complaints.filter(c => c.ticketStatus === 'In Progress').length
+    const closedTickets = complaints.filter(c => c.ticketStatus === 'Closed').length
+
+    return {
+      totalRecords,
+      companyCount,
+      companyRoutes,
+      totalComplaints,
+      openTickets,
+      inProgressTickets,
+      closedTickets
+    }
+  }, [opsData, complaints])
+
   const statCards = [
-    { title: 'Total Complaints', value: stats.totalComplaints, icon: AlertCircle, color: '#ff6b6b' },
-    { title: 'Open Tickets', value: stats.openTickets, icon: Clock, color: '#ffd93d' },
-    { title: 'Resolved Today', value: stats.resolvedToday, icon: CheckCircle, color: '#6bcf7f' },
-    { title: 'Pending > 3 Days', value: stats.pendingTickets, icon: TrendingUp, color: '#ff8c42' },
-    { title: 'Total Vehicles', value: stats.totalVehicles, icon: Bus, color: '#4d96ff' },
-    { title: 'Total Captains', value: stats.totalCaptains, icon: Users, color: '#9b59b6' },
+    { title: 'Total Records', value: analytics.totalRecords, icon: Bus, color: '#4d96ff' },
+    { title: 'Companies', value: analytics.companyCount, icon: Building2, color: '#9b59b6' },
+    { title: 'Total Complaints', value: analytics.totalComplaints, icon: AlertCircle, color: '#ff6b6b' },
+    { title: 'Open Tickets', value: analytics.openTickets, icon: Clock, color: '#ffd93d' },
+    { title: 'In Progress', value: analytics.inProgressTickets, icon: TrendingUp, color: '#ff8c42' },
+    { title: 'Resolved', value: analytics.closedTickets, icon: CheckCircle, color: '#6bcf7f' },
   ]
 
   return (
     <div className={styles.dashboard}>
-      <h1 className={styles.pageTitle}>Dashboard</h1>
+      <div className={styles.welcome}>
+        <h1>Welcome, {currentUser?.name || 'Admin'}</h1>
+        <p>{currentUser?.department} Department</p>
+      </div>
       
       <div className={styles.statsGrid}>
         {statCards.map((card, index) => {
@@ -66,26 +92,54 @@ function Dashboard() {
         })}
       </div>
 
+      {/* Company Routes Analytics */}
+      {analytics.companyCount > 0 && (
+        <div className={styles.analyticsSection}>
+          <h2>Company Routes Analysis</h2>
+          <div className={styles.companyGrid}>
+            {Object.entries(analytics.companyRoutes).map(([company, routeCount]) => (
+              <div key={company} className={styles.companyCard}>
+                <Building2 size={24} color="#00d4ff" />
+                <div>
+                  <h4>{company}</h4>
+                  <p><Route size={14} /> {routeCount} Routes</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className={styles.dashboardGrid}>
         <div className={styles.chartSection}>
-          <h3>Complaint Trends</h3>
-          <div className={styles.chartPlaceholder}>
-            📊 Chart Component Yahan Aayega
+          <h3>Recent Activity</h3>
+          <div className={styles.activityList}>
+            {complaints.slice(0, 5).map(comp => (
+              <div key={comp.id} className={styles.activityItem}>
+                <span className={styles.ticketId}>{comp.ticketNo}</span>
+                <p>{comp.issueDetails?.substring(0, 50)}...</p>
+                <span className={styles[comp.ticketStatus.replace(' ', '')]}>
+                  {comp.ticketStatus}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
         
         <div className={styles.recentSection}>
-          <h3>Recent Complaints</h3>
-          <div className={styles.recentList}>
-            <div className={styles.recentItem}>
-              <span className={styles.ticketId}>VEH-160326-001</span>
-              <p>Engine issue on Route 12</p>
-              <span className={styles.statusOpen}>Open</span>
+          <h3>Quick Stats</h3>
+          <div className={styles.quickStats}>
+            <div className={styles.stat}>
+              <span>{analytics.totalRecords}</span>
+              <label>Fleet Records</label>
             </div>
-            <div className={styles.recentItem}>
-              <span className={styles.ticketId}>OPS-160326-002</span>
-              <p>Late departure complaint</p>
-              <span className={styles.statusProgress}>In Progress</span>
+            <div className={styles.stat}>
+              <span>{analytics.companyCount}</span>
+              <label>Companies</label>
+            </div>
+            <div className={styles.stat}>
+              <span>{analytics.openTickets + analytics.inProgressTickets}</span>
+              <label>Pending Issues</label>
             </div>
           </div>
         </div>

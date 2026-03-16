@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
+import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'lucide-react'
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
-import DataTable from '../../components/DataTable/DataTable'
 import styles from './BuscaroOpsData.module.css'
 
 function BuscaroOpsData() {
   const [opsData, setOpsData] = useState([])
+  const [showUpload, setShowUpload] = useState(false)
+  const [expandedRows, setExpandedRows] = useState({})
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     const saved = localStorage.getItem('buscaroOpsData')
@@ -16,58 +19,157 @@ function BuscaroOpsData() {
   const handleDataUploaded = (data) => {
     setOpsData(data)
     localStorage.setItem('buscaroOpsData', JSON.stringify(data))
+    setShowUpload(false)
   }
 
-  const columns = [
-    { header: 'Captain ID', accessor: 'captainId' },
-    { header: 'Vendor Name', accessor: 'vendorName' },
-    { header: 'Captain Name', accessor: 'captainName' },
-    { header: 'Bus Number', accessor: 'busNumber' },
-    { header: 'Vehicle ID', accessor: 'vehicleId' },
-    { header: 'Route Name', accessor: 'routeName' },
-    { header: 'Company', accessor: 'company' },
-    { header: 'Status', accessor: 'status' },
-    { header: 'Contact', accessor: 'captainPersonalMobile' },
-    { header: 'CNIC', accessor: 'captainCnic' }
+  const toggleRow = (id) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }))
+  }
+
+  const filteredData = opsData.filter(row => 
+    Object.values(row).some(val => 
+      String(val).toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  )
+
+  const exportToCSV = () => {
+    const headers = Object.keys(opsData[0] || {}).join(',')
+    const rows = opsData.map(row => Object.values(row).join(','))
+    const csv = [headers, ...rows].join('\n')
+    
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'buscaro_ops_data.csv'
+    a.click()
+  }
+
+  // Summary stats
+  const uniqueCompanies = [...new Set(opsData.map(item => item.company).filter(Boolean))]
+  const uniqueRoutes = [...new Set(opsData.map(item => item.routeName).filter(Boolean))]
+
+  const mainColumns = [
+    { header: 'Captain ID', key: 'captainId' },
+    { header: 'Captain Name', key: 'captainName' },
+    { header: 'Vendor', key: 'vendorName' },
+    { header: 'Route', key: 'routeName' },
+    { header: 'Bus No', key: 'busNumber' },
+    { header: 'Status', key: 'status' }
+  ]
+
+  const allFields = [
+    'captainId', 'vendorName', 'captainName', 'busNumber', 'vehicleId',
+    'paymentTerms', 'engine', 'vehicleCategory', 'busType', 'seats',
+    'trackerStatus', 'routeName', 'company', 'rent', 'status',
+    'captainPersonalMobile', 'captainCnic', 'vendorNumber', 'iban'
   ]
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>Buscaro Ops Data</h1>
-        <p>Upload and manage fleet operations data</p>
+        <div>
+          <h1>Buscaro Ops Data</h1>
+          <p>Upload and manage fleet operations data</p>
+        </div>
+        <div className={styles.actions}>
+          <button 
+            className={styles.updateBtn}
+            onClick={() => setShowUpload(!showUpload)}
+          >
+            <RefreshCw size={18} />
+            Update Data
+          </button>
+          <button 
+            className={styles.exportBtn}
+            onClick={exportToCSV}
+            disabled={opsData.length === 0}
+          >
+            <Download size={18} />
+            Export
+          </button>
+        </div>
       </div>
 
-      <ExcelUploader onDataUploaded={handleDataUploaded} />
-
-      {opsData.length > 0 && (
-        <div className={styles.dataSection}>
-          <div className={styles.statsBar}>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>{opsData.length}</span>
-              <span className={styles.statLabel}>Total Records</span>
-            </div>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>
-                {new Set(opsData.map(d => d.routeName)).size}
-              </span>
-              <span className={styles.statLabel}>Unique Routes</span>
-            </div>
-            <div className={styles.stat}>
-              <span className={styles.statValue}>
-                {new Set(opsData.map(d => d.vendorName)).size}
-              </span>
-              <span className={styles.statLabel}>Vendors</span>
-            </div>
-          </div>
-
-          <DataTable 
-            columns={columns}
-            data={opsData}
-            rowsPerPage={10}
-          />
+      {showUpload && (
+        <div className={styles.uploadSection}>
+          <ExcelUploader onDataUploaded={handleDataUploaded} />
         </div>
       )}
+
+      <div className={styles.statsBar}>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>{opsData.length}</span>
+          <span className={styles.statLabel}>Total Records</span>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>{uniqueCompanies.length}</span>
+          <span className={styles.statLabel}>Companies</span>
+        </div>
+        <div className={styles.stat}>
+          <span className={styles.statValue}>{uniqueRoutes.length}</span>
+          <span className={styles.statLabel}>Routes</span>
+        </div>
+      </div>
+
+      <div className={styles.searchBox}>
+        <Search size={18} />
+        <input
+          type="text"
+          placeholder="Search records..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className={styles.tableContainer}>
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th>Show</th>
+              {mainColumns.map(col => (
+                <th key={col.key}>{col.header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filteredData.map((row) => (
+              <>
+                <tr key={row.id} className={styles.mainRow}>
+                  <td>
+                    <button 
+                      className={styles.expandBtn}
+                      onClick={() => toggleRow(row.id)}
+                    >
+                      {expandedRows[row.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                  </td>
+                  {mainColumns.map(col => (
+                    <td key={col.key}>{row[col.key] || '-'}</td>
+                  ))}
+                </tr>
+                {expandedRows[row.id] && (
+                  <tr className={styles.expandedRow}>
+                    <td colSpan={mainColumns.length + 1}>
+                      <div className={styles.detailsGrid}>
+                        {allFields.map(field => (
+                          <div key={field} className={styles.detailItem}>
+                            <label>{field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                            <span>{row[field] || '-'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

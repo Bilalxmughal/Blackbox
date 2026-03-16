@@ -47,3 +47,171 @@
   font-size: 13px;
   color: #666;
 }
+
+/* Add to existing file */
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.updateBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #00d4ff;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.updateBtn:hover {
+  background: #00b8d9;
+}
+
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #6bcf7f;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.exportBtn:hover:not(:disabled) {
+  background: #5ab969;
+}
+
+.exportBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uploadSection {
+  margin-bottom: 30px;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 12px 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.searchBox svg {
+  color: #888;
+}
+
+.searchBox input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dataTable th {
+  background: #f8f9fa;
+  padding: 15px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dataTable td {
+  padding: 15px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+}
+
+.mainRow:hover {
+  background: #f8f9fa;
+}
+
+.expandBtn {
+  width: 32px;
+  height: 32px;
+  background: #00d4ff20;
+  color: #00d4ff;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.expandBtn:hover {
+  background: #00d4ff;
+  color: white;
+}
+
+.expandedRow {
+  background: #f8f9fa;
+}
+
+.expandedRow td {
+  padding: 0;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  padding: 25px;
+}
+
+.detailItem {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.detailItem label {
+  display: block;
+  font-size: 11px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 5px;
+}
+
+.detailItem span {
+  font-size: 14px;
+  color: #1a1a2e;
+  font-weight: 500;
+}
