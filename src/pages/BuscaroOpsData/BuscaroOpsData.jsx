@@ -3,23 +3,46 @@ import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'luc
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
 import styles from './BuscaroOpsData.module.css'
 
-function BuscaroOpsData() {
+function BuscaroOpsData({ isAdmin }) {
   const [opsData, setOpsData] = useState([])
   const [showUpload, setShowUpload] = useState(false)
   const [expandedRows, setExpandedRows] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
+  const [lastUpdated, setLastUpdated] = useState(null)
 
+  // Google Sheet CSV URL
+  const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/<sheetId>/gviz/tq?tqx=out:csv&sheet=<tabName>'
+
+  // Fetch data from Google Sheet
   useEffect(() => {
-    const saved = localStorage.getItem('buscaroOpsData')
-    if (saved) {
-      setOpsData(JSON.parse(saved))
+    const fetchSheetData = async () => {
+      try {
+        const res = await fetch(sheetCsvUrl)
+        const text = await res.text()
+        const rows = text.split('\n').map(r => r.split(','))
+        const headers = rows[0]
+        const data = rows.slice(1).map(r =>
+          Object.fromEntries(r.map((val, i) => [headers[i], val]))
+        )
+        setOpsData(data)
+        localStorage.setItem('buscaroOpsData', JSON.stringify(data))
+        setLastUpdated(new Date().toLocaleString())
+      } catch (err) {
+        console.error('Error fetching Google Sheet:', err)
+        // fallback to localStorage
+        const saved = localStorage.getItem('buscaroOpsData')
+        if (saved) setOpsData(JSON.parse(saved))
+      }
     }
+
+    fetchSheetData()
   }, [])
 
   const handleDataUploaded = (data) => {
     setOpsData(data)
     localStorage.setItem('buscaroOpsData', JSON.stringify(data))
     setShowUpload(false)
+    setLastUpdated(new Date().toLocaleString())
   }
 
   const toggleRow = (id) => {
@@ -29,17 +52,18 @@ function BuscaroOpsData() {
     }))
   }
 
-  const filteredData = opsData.filter(row => 
-    Object.values(row).some(val => 
+  const filteredData = opsData.filter(row =>
+    Object.values(row).some(val =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   )
 
   const exportToCSV = () => {
-    const headers = Object.keys(opsData[0] || {}).join(',')
+    if (!opsData.length) return
+    const headers = Object.keys(opsData[0]).join(',')
     const rows = opsData.map(row => Object.values(row).join(','))
     const csv = [headers, ...rows].join('\n')
-    
+
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -48,7 +72,6 @@ function BuscaroOpsData() {
     a.click()
   }
 
-  // Summary stats
   const uniqueCompanies = [...new Set(opsData.map(item => item.company).filter(Boolean))]
   const uniqueRoutes = [...new Set(opsData.map(item => item.routeName).filter(Boolean))]
 
@@ -74,27 +97,30 @@ function BuscaroOpsData() {
         <div>
           <h1>Buscaro Ops Data</h1>
           <p>Upload and manage fleet operations data</p>
+          {lastUpdated && <p style={{ fontSize: '12px', color: '#888' }}>Last updated: {lastUpdated}</p>}
         </div>
-        <div className={styles.actions}>
-          <button 
-            className={styles.updateBtn}
-            onClick={() => setShowUpload(!showUpload)}
-          >
-            <RefreshCw size={18} />
-            Update Data
-          </button>
-          <button 
-            className={styles.exportBtn}
-            onClick={exportToCSV}
-            disabled={opsData.length === 0}
-          >
-            <Download size={18} />
-            Export
-          </button>
-        </div>
+        {isAdmin && (
+          <div className={styles.actions}>
+            <button 
+              className={styles.updateBtn}
+              onClick={() => setShowUpload(!showUpload)}
+            >
+              <RefreshCw size={18} />
+              Update Data
+            </button>
+            <button 
+              className={styles.exportBtn}
+              onClick={exportToCSV}
+              disabled={opsData.length === 0}
+            >
+              <Download size={18} />
+              Export
+            </button>
+          </div>
+        )}
       </div>
 
-      {showUpload && (
+      {showUpload && isAdmin && (
         <div className={styles.uploadSection}>
           <ExcelUploader onDataUploaded={handleDataUploaded} />
         </div>
