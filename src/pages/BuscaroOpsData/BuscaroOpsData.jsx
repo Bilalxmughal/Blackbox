@@ -4,23 +4,7 @@ import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'luc
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
 import styles from './BuscaroOpsData.module.css'
 
-// Columns to exclude from expanded view
-const excludeColumns = [
-  'Captain ID', 'Vehicle ID', 'Engine', 'Vehicle Category', 'Seats', 
-  'Tracker Status', 'Tracker Active Status', 'Route Type', '1st Ride_Route ID',
-  'Total_inride_km', 'Garage Rent', 'Vendor Bonus (Monthly)', 'Captain Bonus (Monthly)',
-  'Maintenance Rate', 'Rides Count', 'Fuel Rate', 'Basic plan (Rate/Ride)', 
-  'Variable Plan(Rs/Km)', 'Status', 'Start Date', 'End Date', 'Reason of End', 
-  'Captain Signup Date', 'Cap_first_ride', 'Cap_last_ride', 'Contractor ID', 
-  'Contractor Name In DB', 'Vendor Filer Status', 'Vendor Repeated Name', 
-  'vendor_creation Date', 'Total Basic', 'Captain 2', 'Captain 2 Num', 
-  'Bus Number in DB', 'Tracker Comments', 'Captain EP Method Status', 
-  'DB Status of Financial', 'Repeated ID', 'DB Status of Vehicle', 'EP Number', 
-  'Garage in DB'
-]
 
-// Filter allFields to show only useful columns in expanded rows
-const allFields = Object.keys(opsData[0] || {}).filter(field => !excludeColumns.includes(field))
 
 function BuscaroOpsData({ isAdmin }) {
   const [opsData, setOpsData] = useState([])
