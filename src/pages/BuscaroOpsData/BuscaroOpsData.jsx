@@ -11,7 +11,7 @@ function BuscaroOpsData({ isAdmin }) {
   const [lastUpdated, setLastUpdated] = useState(null)
 
   // Google Sheet CSV URL
-  const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/<sheetId>/gviz/tq?tqx=out:csv&sheet=<tabName>'
+  const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/edit?gid=0#gid=0'
 
   // Fetch data from Google Sheet
   useEffect(() => {
