@@ -65,6 +65,7 @@ export const defaultUsers = [
     createdAt: new Date().toISOString(),
     lastLogin: new Date().toISOString()
   },
+
   {
     id: 'user-2',
     name: 'Admin User',
@@ -163,3 +164,56 @@ export const canManageUser = (currentUser, targetUser) => {
 export const canChangeRole = (currentUser) => {
   return currentUser?.role === 'super_admin'
 }
+
+// ==========================================
+// FORCE RESET FUNCTION - Call this if login fails
+// ==========================================
+
+export const forceResetUsers = () => {
+  console.log('🔄 FORCING RESET TO DEFAULT USERS...')
+  localStorage.removeItem('users')
+  localStorage.setItem('users', JSON.stringify(defaultUsers))
+  console.log('✅ Reset complete. Default users restored.')
+  console.log('Users now:', defaultUsers.map(u => ({ email: u.email, password: u.password })))
+  return defaultUsers
+}
+
+// Auto-check on load
+const checkAndFixUsers = () => {
+  try {
+    const saved = localStorage.getItem('users')
+    
+    // If no data or corrupted
+    if (!saved || saved === 'null' || saved === 'undefined' || saved === '[]') {
+      console.log('⚠️ No valid users found in localStorage')
+      forceResetUsers()
+      return
+    }
+    
+    const parsed = JSON.parse(saved)
+    
+    // If not array or empty
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      console.log('⚠️ Users data corrupted or empty')
+      forceResetUsers()
+      return
+    }
+    
+    // If Super Admin missing
+    const hasSuper = parsed.some(u => u.email === 'super@buscaro.com')
+    if (!hasSuper) {
+      console.log('⚠️ Super Admin not found in saved data')
+      forceResetUsers()
+      return
+    }
+    
+    console.log('✅ Users data valid. Count:', parsed.length)
+    
+  } catch (e) {
+    console.error('❌ Error checking users:', e)
+    forceResetUsers()
+  }
+}
+
+// Run immediately when this file loads
+checkAndFixUsers()
