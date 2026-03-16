@@ -1,20 +1,22 @@
 .leftPanel {
   width: 260px;
+  min-width: 260px;      /* Add kiya - don't shrink */
   height: 100vh;
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   color: white;
   display: flex;
   flex-direction: column;
-  position: fixed;
+  position: fixed;       /* Fixed rehne do */
   left: 0;
   top: 0;
   transition: width 0.3s ease;
-  z-index: 1000;       /* Increased from 100 to 1000 */
-  box-shadow: 2px 0 10px rgba(0,0,0,0.1);  /* Add shadow for depth */
+  z-index: 100;
+  overflow-x: hidden;    /* Add kiya */
 }
 
 .leftPanel.collapsed {
   width: 70px;
+  min-width: 70px;       /* Add kiya */
 }
 
 .logoSection {

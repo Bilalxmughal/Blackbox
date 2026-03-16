@@ -1,6 +1,7 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
 /* Left panel ab flex item hai, fixed nahi */
@@ -14,13 +15,12 @@
 }
 
 .mainContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #f5f6fa;
-  min-height: 100vh;
-  overflow-x: hidden;  /* Prevent horizontal scroll */
+  margin-left: 260px;
+  width: calc(100% - 260px) !important;  /* !important add kiya */
+  max-width: calc(100% - 260px) !important;
+  overflow-x: hidden !important;
 }
+
 .topHeader {
   background: white;
   padding: 20px 30px;
@@ -60,7 +60,7 @@
 .content {
   flex: 1;
   padding: 30px;
-  overflow-x: auto;
-  position: relative;  /* Add kiya */
-  z-index: 1;          /* Add kiya */
+  overflow-x: hidden;    /* auto se hidden kiya */
+  width: 100%;           /* Add kiya */
+  box-sizing: border-box;  /* Add kiya */
 }
