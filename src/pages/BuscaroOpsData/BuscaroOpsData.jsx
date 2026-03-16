@@ -12,7 +12,7 @@ function BuscaroOpsData({ isAdmin }) {
   const [lastUpdated, setLastUpdated] = useState(null)
 
   const sheetCsvUrl =
-    'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/gviz/tq?tqx=out:csv&sheet=Sheet1'
+    'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/gviz/tq?tqx=out:csv&sheet=0'
 
   const selectedColumnsSequence = [
     'Captain Name',
