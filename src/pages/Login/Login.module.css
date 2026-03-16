@@ -104,3 +104,97 @@
   color: #00d4ff;
   font-family: monospace;
 }
+
+/* Add these to your existing Login.module.css */
+
+.quickLogin {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.quickLogin p {
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quickButtons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quickBtnSuper,
+.quickBtnAdmin,
+.quickBtnOps {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.quickBtnSuper {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.quickBtnAdmin {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.quickBtnOps {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.quickBtnSuper:hover,
+.quickBtnAdmin:hover,
+.quickBtnOps:hover {
+  filter: brightness(0.95);
+}
+
+.debugSection {
+  margin-top: 20px;
+}
+
+.debugToggle {
+  font-size: 12px;
+  color: #888;
+  text-decoration: underline;
+  background: none;
+}
+
+.debugPanel {
+  margin-top: 12px;
+  padding: 16px;
+  background: #fff8e1;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.debugPanel p {
+  font-size: 13px;
+  color: #f57c00;
+  margin-bottom: 10px;
+}
+
+.resetBtn {
+  width: 100%;
+  padding: 10px;
+  background: #ff6b6b;
+  color: white;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.debugPanel small {
+  color: #888;
+  font-size: 11px;
+}
