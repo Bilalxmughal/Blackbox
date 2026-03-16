@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from "../../context/AuthContext";
+
 import LeftPanel from '../LeftPanel/LeftPanel'
 import Footer from '../Footer/Footer'
 import styles from './Layout.module.css'
