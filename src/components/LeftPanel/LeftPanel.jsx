@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { Send, User, Clock, Calendar, MessageSquare } from 'lucide-react'
 import Modal from '../Modal/Modal'
-import styles from './TicketDetail.module.css'
+import styles from './LeftPanel.module.css'
 
 function TicketDetail({ 
   ticket, 
