@@ -11,25 +11,30 @@ function BuscaroOpsData({ isAdmin }) {
   const [lastUpdated, setLastUpdated] = useState(null)
 
   // Google Sheet CSV URL
-  const sheetCsvUrl = 'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/edit?gid=0#gid=0'
+  const sheetCsvUrl = 
+    'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/gviz/tq?tqx=out:csv&sheet=Sheet1'
 
-  // Fetch data from Google Sheet
   useEffect(() => {
     const fetchSheetData = async () => {
       try {
         const res = await fetch(sheetCsvUrl)
         const text = await res.text()
-        const rows = text.split('\n').map(r => r.split(','))
+        
+        const rows = text
+          .trim()
+          .split('\n')
+          .map(r => r.split(','))
+
         const headers = rows[0]
         const data = rows.slice(1).map(r =>
           Object.fromEntries(r.map((val, i) => [headers[i], val]))
         )
+
         setOpsData(data)
         localStorage.setItem('buscaroOpsData', JSON.stringify(data))
         setLastUpdated(new Date().toLocaleString())
       } catch (err) {
         console.error('Error fetching Google Sheet:', err)
-        // fallback to localStorage
         const saved = localStorage.getItem('buscaroOpsData')
         if (saved) setOpsData(JSON.parse(saved))
       }
@@ -97,18 +102,24 @@ function BuscaroOpsData({ isAdmin }) {
         <div>
           <h1>Buscaro Ops Data</h1>
           <p>Upload and manage fleet operations data</p>
-          {lastUpdated && <p style={{ fontSize: '12px', color: '#888' }}>Last updated: {lastUpdated}</p>}
+          {lastUpdated && (
+            <p style={{ fontSize: '12px', color: '#888' }}>
+              Last updated: {lastUpdated}
+            </p>
+          )}
         </div>
+
         {isAdmin && (
           <div className={styles.actions}>
-            <button 
+            <button
               className={styles.updateBtn}
               onClick={() => setShowUpload(!showUpload)}
             >
               <RefreshCw size={18} />
               Update Data
             </button>
-            <button 
+
+            <button
               className={styles.exportBtn}
               onClick={exportToCSV}
               disabled={opsData.length === 0}
@@ -166,24 +177,34 @@ function BuscaroOpsData({ isAdmin }) {
               <>
                 <tr key={row.id} className={styles.mainRow}>
                   <td>
-                    <button 
+                    <button
                       className={styles.expandBtn}
                       onClick={() => toggleRow(row.id)}
                     >
-                      {expandedRows[row.id] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      {expandedRows[row.id] ? (
+                        <ChevronUp size={16} />
+                      ) : (
+                        <ChevronDown size={16} />
+                      )}
                     </button>
                   </td>
+
                   {mainColumns.map(col => (
                     <td key={col.key}>{row[col.key] || '-'}</td>
                   ))}
                 </tr>
+
                 {expandedRows[row.id] && (
                   <tr className={styles.expandedRow}>
                     <td colSpan={mainColumns.length + 1}>
                       <div className={styles.detailsGrid}>
                         {allFields.map(field => (
                           <div key={field} className={styles.detailItem}>
-                            <label>{field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</label>
+                            <label>
+                              {field
+                                .replace(/([A-Z])/g, ' $1')
+                                .replace(/^./, str => str.toUpperCase())}
+                            </label>
                             <span>{row[field] || '-'}</span>
                           </div>
                         ))}
