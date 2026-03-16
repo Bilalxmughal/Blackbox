@@ -4,8 +4,6 @@ import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'luc
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
 import styles from './BuscaroOpsData.module.css'
 
-
-
 function BuscaroOpsData({ isAdmin }) {
   const [opsData, setOpsData] = useState([])
   const [showUpload, setShowUpload] = useState(false)
@@ -16,6 +14,31 @@ function BuscaroOpsData({ isAdmin }) {
   // Google Sheet CSV URL
   const sheetCsvUrl = 
     'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/gviz/tq?tqx=out:csv&sheet=Sheet1'
+
+  // Columns to display in custom sequence
+  const selectedColumnsSequence = [
+    'Captain Name',
+    'Captain Personal Mobile',
+    'Captain CNIC',
+    'Company',
+    'Route Name',
+    'Vendor Name',
+    'Vendor Number',
+    'Vendor CNIC',
+    'Bus Number',
+    'Bus_Type',
+    'Seats',
+    'Mileage',
+    'Tracker Status',
+    'Tracker Active Status',
+    'Rent Days',
+    'Rent',
+    'GMV',
+    'Margin',
+    'Comments',
+    'Start Date',
+    'IBAN'
+  ]
 
   useEffect(() => {
     const fetchSheetData = async () => {
@@ -64,8 +87,10 @@ function BuscaroOpsData({ isAdmin }) {
 
   const exportToCSV = () => {
     if (!opsData.length) return
-    const headers = Object.keys(opsData[0]).join(',')
-    const rows = opsData.map(row => Object.values(row).join(','))
+    const headers = selectedColumnsSequence.join(',')
+    const rows = opsData.map(row => 
+      selectedColumnsSequence.map(col => row[col] || '-').join(',')
+    )
     const csv = [headers, ...rows].join('\n')
 
     const blob = new Blob([csv], { type: 'text/csv' })
@@ -79,18 +104,23 @@ function BuscaroOpsData({ isAdmin }) {
   const uniqueCompanies = [...new Set(opsData.map(item => item.Company).filter(Boolean))]
   const uniqueRoutes = [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))]
 
+  // Main table columns
   const mainColumns = [
-    { header: 'Captain ID', key: 'Captain ID' },
     { header: 'Captain Name', key: 'Captain Name' },
-    { header: 'Vendor', key: 'Vendor Name' },
-    { header: 'Route', key: 'Route Name' },
-    { header: 'Bus No', key: 'Bus Number' },
+    { header: 'Captain Personal Mobile', key: 'Captain Personal Mobile' },
+    { header: 'Captain CNIC', key: 'Captain CNIC' },
+    { header: 'Company', key: 'Company' },
+    { header: 'Route Name', key: 'Route Name' },
+    { header: 'Vendor Name', key: 'Vendor Name' },
+    { header: 'Bus Number', key: 'Bus Number' },
+    { header: 'Bus Type', key: 'Bus_Type' },
+    { header: 'Seats', key: 'Seats' },
+    { header: 'Rent', key: 'Rent' },
     { header: 'Status', key: 'Status' }
   ]
 
-  
-
-  const allFields = Object.keys(opsData[0] || {})
+  // Fields to show in expanded details
+  const allFields = selectedColumnsSequence.filter(field => field in (opsData[0] || {}))
 
   return (
     <div className={styles.container}>
