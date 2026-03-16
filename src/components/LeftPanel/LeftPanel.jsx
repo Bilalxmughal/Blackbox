@@ -29,7 +29,7 @@ function LeftPanel() {
     <aside className={`${styles.leftPanel} ${collapsed ? styles.collapsed : ''}`}>
       <div className={styles.logoSection}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>🚌</span>
+          <span className={styles.logoIcon}></span>
           {!collapsed && (
             <div className={styles.logoText}>
               <h1>BusCaro</h1>
