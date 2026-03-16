@@ -129,9 +129,14 @@ function BuscaroOpsData({ isAdmin }) {
     { header: 'Margin', key: 'Margin' },
   ]
 
-  
   // Fields to show in expanded details
   const allFields = selectedColumnsSequence.filter(field => field in (opsData[0] || {}))
+
+  // Add unique key to each row for expand toggle
+  const filteredDataWithKey = filteredData.map(row => {
+    const uniqueKey = `${row['Bus Number'] || 'noBus'}_${row['Captain Name'] || 'noCaptain'}`
+    return { ...row, uniqueKey }
+  })
 
   return (
     <div className={styles.container}>
@@ -204,14 +209,14 @@ function BuscaroOpsData({ isAdmin }) {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((row, index) => (
-              <tr key={index} className={styles.mainRow}>
+            {filteredDataWithKey.map(row => (
+              <tr key={row.uniqueKey} className={styles.mainRow}>
                 <td>
                   <button
                     className={styles.expandBtn}
-                    onClick={() => toggleRow(index)}
+                    onClick={() => toggleRow(row.uniqueKey)}
                   >
-                    {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    {expandedRows[row.uniqueKey] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                   </button>
                 </td>
                 {mainColumns.map(col => (
@@ -219,10 +224,11 @@ function BuscaroOpsData({ isAdmin }) {
                 ))}
               </tr>
             ))}
-            {/* Expanded rows inside table */}
-            {filteredData.map((row, index) =>
-              expandedRows[index] ? (
-                <tr key={`expanded-${index}`} className={styles.expandedRow}>
+
+            {/* Expanded rows */}
+            {filteredDataWithKey.map(row =>
+              expandedRows[row.uniqueKey] ? (
+                <tr key={`expanded-${row.uniqueKey}`} className={styles.expandedRow}>
                   <td colSpan={mainColumns.length + 1}>
                     <div className={styles.detailsGrid}>
                       {allFields.map(field => (
