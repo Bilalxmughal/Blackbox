@@ -113,6 +113,7 @@ function BuscaroOpsData({ isAdmin }) {
     { header: 'Vendor Name', key: 'Vendor Name' },
     { header: 'Bus Number', key: 'Bus Number' },
     { header: 'Bus Type', key: 'Bus_Type' },
+    { header: 'Rent Days', key: 'Rent Days' },
     { header: 'Rent', key: 'Rent' },
     { header: 'GMV', key: 'GMV' },
     { header: 'Margin', key: 'Margin' },
