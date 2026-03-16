@@ -9,7 +9,7 @@ import {
   Building2,
   Route
 } from 'lucide-react'
-import { useAuth } from './context/AuthContext'
+import { useAuth } from '../../context/AuthContext'
 import styles from './Dashboard.module.css'
 
 function Dashboard() {
