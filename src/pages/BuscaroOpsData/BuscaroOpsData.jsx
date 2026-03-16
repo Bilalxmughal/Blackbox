@@ -204,39 +204,40 @@ function BuscaroOpsData({ isAdmin }) {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((row, index) => (
-              <tr key={index} className={styles.mainRow}>
-                <td>
-                  <button
-                    className={styles.expandBtn}
-                    onClick={() => toggleRow(index)}
-                  >
-                    {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                  </button>
-                </td>
-                {mainColumns.map(col => (
-                  <td key={col.key}>{row[col.key] || '-'}</td>
+  {filteredData.map((row) => {
+    const rowKey = row['Captain Personal Mobile'] + '_' + row['Bus Number'];
+    return (
+      <React.Fragment key={rowKey}>
+        <tr className={styles.mainRow}>
+          <td>
+            <button
+              className={styles.expandBtn}
+              onClick={() => toggleRow(rowKey)}
+            >
+              {expandedRows[rowKey] ? <ChevronUp size={16}/> : <ChevronDown size={16}/>}
+            </button>
+          </td>
+          {mainColumns.map(col => <td key={col.key}>{row[col.key] || '-'}</td>)}
+        </tr>
+
+        {expandedRows[rowKey] && (
+          <tr className={styles.expandedRow}>
+            <td colSpan={mainColumns.length + 1}>
+              <div className={styles.detailsGrid}>
+                {allFields.map(field => (
+                  <div key={field} className={styles.detailItem}>
+                    <label>{field}</label>
+                    <span>{row[field] || '-'}</span>
+                  </div>
                 ))}
-              </tr>
-            ))}
-            {/* Expanded rows inside table */}
-            {filteredData.map((row, index) =>
-              expandedRows[index] ? (
-                <tr key={`expanded-${index}`} className={styles.expandedRow}>
-                  <td colSpan={mainColumns.length + 1}>
-                    <div className={styles.detailsGrid}>
-                      {allFields.map(field => (
-                        <div key={field} className={styles.detailItem}>
-                          <label>{field}</label>
-                          <span>{row[field] || '-'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ) : null
-            )}
-          </tbody>
+              </div>
+            </td>
+          </tr>
+        )}
+      </React.Fragment>
+    )
+  })}
+</tbody>
         </table>
       </div>
     </div>
