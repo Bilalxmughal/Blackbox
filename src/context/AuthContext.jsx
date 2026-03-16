@@ -8,69 +8,144 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Initialize data on mount
   useEffect(() => {
-    // Check for saved session
+    console.log('=== AUTH CONTEXT MOUNTED ===')
+    
+    // Check/clear corrupted data
+    try {
+      const savedUsers = localStorage.getItem('users')
+      console.log('Raw savedUsers:', savedUsers)
+      
+      if (!savedUsers || savedUsers === 'null' || savedUsers === 'undefined') {
+        console.log('No valid users found, setting defaults...')
+        localStorage.setItem('users', JSON.stringify(defaultUsers))
+      } else {
+        // Validate it's proper JSON
+        const parsed = JSON.parse(savedUsers)
+        if (!Array.isArray(parsed)) {
+          throw new Error('Users is not an array')
+        }
+        console.log('Loaded users count:', parsed.length)
+        console.log('Users:', parsed.map(u => ({ 
+          email: u.email, 
+          password: u.password,
+          role: u.role 
+        })))
+      }
+    } catch (e) {
+      console.error('CORRUPTED DATA:', e)
+      localStorage.clear()
+      localStorage.setItem('users', JSON.stringify(defaultUsers))
+      console.log('Data reset to defaults')
+    }
+
+    // Check for existing session
     const saved = localStorage.getItem('currentUser')
     if (saved) {
       try {
         const user = JSON.parse(saved)
         setCurrentUser(user)
         setIsAuthenticated(true)
+        console.log('Restored session:', user.email)
       } catch (e) {
-        console.error('Invalid saved user data')
         localStorage.removeItem('currentUser')
       }
     }
+    
     setIsLoading(false)
   }, [])
 
   const login = (email, password) => {
-    console.log('Login attempt:', email, password) // Debug
-    
-    // Get users from localStorage or use defaults
-    const savedUsers = localStorage.getItem('users')
-    let users = []
-    
-    try {
-      users = savedUsers ? JSON.parse(savedUsers) : defaultUsers
-    } catch (e) {
-      console.error('Error parsing users:', e)
-      users = defaultUsers
-    }
-    
-    console.log('Available users:', users.map(u => ({ email: u.email, role: u.role }))) // Debug
-    
-    // Find matching user
-    const user = users.find(u => 
-      u.email?.toLowerCase().trim() === email.toLowerCase().trim() && 
-      u.password === password
-    )
+    console.log('=== LOGIN ATTEMPT ===')
+    console.log('Input email:', JSON.stringify(email))
+    console.log('Input password:', JSON.stringify(password))
+    console.log('Email length:', email.length)
+    console.log('Password length:', password.length)
 
-    if (user) {
-      console.log('User found:', user.name, user.role) // Debug
+    // Normalize inputs
+    const cleanEmail = email.toLowerCase().trim()
+    const cleanPassword = password.trim()
+    
+    console.log('Clean email:', JSON.stringify(cleanEmail))
+    console.log('Clean password:', JSON.stringify(cleanPassword))
+
+    // Get users
+    let users = []
+    try {
+      const savedUsers = localStorage.getItem('users')
+      users = savedUsers ? JSON.parse(savedUsers) : defaultUsers
+      console.log('Total users in system:', users.length)
+    } catch (e) {
+      console.error('Error loading users:', e)
+      return { success: false, error: 'System error. Please refresh.' }
+    }
+
+    // Debug: Show all users
+    console.log('--- ALL USERS ---')
+    users.forEach((u, i) => {
+      console.log(`User ${i}:`, {
+        email: JSON.stringify(u.email),
+        password: JSON.stringify(u.password),
+        emailMatch: u.email?.toLowerCase().trim() === cleanEmail,
+        passwordMatch: u.password?.trim() === cleanPassword
+      })
+    })
+
+    // Find user
+    const user = users.find(u => {
+      const userEmail = u.email?.toLowerCase().trim()
+      const userPassword = u.password?.trim()
       
-      // Check if user is active
-      if (user.status === 'inactive') {
-        return { success: false, error: 'Your account is inactive. Contact Super Admin.' }
+      const emailMatch = userEmail === cleanEmail
+      const passwordMatch = userPassword === cleanPassword
+      
+      console.log(`Checking ${u.email}:`, { emailMatch, passwordMatch })
+      
+      return emailMatch && passwordMatch
+    })
+
+    console.log('Found user:', user ? user.name : 'NO MATCH')
+
+    if (!user) {
+      // Check if email exists with wrong password
+      const emailExists = users.some(u => 
+        u.email?.toLowerCase().trim() === cleanEmail
+      )
+      
+      if (emailExists) {
+        console.log('Email exists but password wrong')
+        return { success: false, error: 'Incorrect password' }
       }
       
-      // Update last login
-      const updatedUser = { ...user, lastLogin: new Date().toISOString() }
-      
-      // Update in users array
-      const updatedUsers = users.map(u => u.id === user.id ? updatedUser : u)
-      localStorage.setItem('users', JSON.stringify(updatedUsers))
-      
-      // Set current user
-      setCurrentUser(updatedUser)
-      setIsAuthenticated(true)
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser))
-      
-      return { success: true, user: updatedUser }
+      console.log('Email not found in system')
+      return { success: false, error: 'Email not registered' }
+    }
+
+    // Check status
+    if (user.status === 'inactive') {
+      return { success: false, error: 'Account inactive. Contact Super Admin.' }
+    }
+
+    // Success - update login time
+    const updatedUser = { 
+      ...user, 
+      lastLogin: new Date().toISOString() 
     }
     
-    console.log('No user found with credentials') // Debug
-    return { success: false, error: 'Invalid email or password' }
+    // Update users array
+    const updatedUsers = users.map(u => 
+      u.id === user.id ? updatedUser : u
+    )
+    localStorage.setItem('users', JSON.stringify(updatedUsers))
+    
+    // Set session
+    setCurrentUser(updatedUser)
+    setIsAuthenticated(true)
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser))
+    
+    console.log('=== LOGIN SUCCESS ===')
+    return { success: true, user: updatedUser }
   }
 
   const logout = () => {
@@ -79,14 +154,40 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('currentUser')
   }
 
-  // Debug function to reset all data
-  const resetData = () => {
+  const resetAllData = () => {
+    console.log('=== RESETTING ALL DATA ===')
     localStorage.clear()
+    localStorage.setItem('users', JSON.stringify(defaultUsers))
     window.location.reload()
   }
 
+  const forceLogin = (email) => {
+    // Emergency bypass for testing
+    const savedUsers = localStorage.getItem('users')
+    const users = savedUsers ? JSON.parse(savedUsers) : defaultUsers
+    const user = users.find(u => u.email?.toLowerCase().trim() === email.toLowerCase().trim())
+    
+    if (user) {
+      setCurrentUser(user)
+      setIsAuthenticated(true)
+      localStorage.setItem('currentUser', JSON.stringify(user))
+      return true
+    }
+    return false
+  }
+
   if (isLoading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontFamily: 'sans-serif'
+      }}>
+        <div>Loading CRM...</div>
+      </div>
+    )
   }
 
   return (
@@ -95,7 +196,8 @@ export function AuthProvider({ children }) {
       isAuthenticated, 
       login, 
       logout,
-      resetData,
+      resetAllData,
+      forceLogin,
       ROLES 
     }}>
       {children}

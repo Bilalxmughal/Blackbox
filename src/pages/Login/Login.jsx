@@ -58,7 +58,7 @@ function Login() {
         
         <div className={styles.demo}>
           <p>Demo Credentials:</p>
-          <code>admin@buscaro.com / admin123</code>
+          <code>super@buscaro.com / admin123</code>
         </div>
       </div>
     </div>

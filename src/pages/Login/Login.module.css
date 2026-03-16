@@ -198,3 +198,84 @@
   color: #888;
   font-size: 11px;
 }
+
+
+.debugPanel {
+  margin-top: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 2px dashed #ddd;
+}
+
+.debugPanel h4 {
+  color: #666;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.debugButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.debugBtn,
+.debugBtnDanger,
+.debugBtnWarning {
+  padding: 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.debugBtn {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.debugBtnDanger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.debugBtnWarning {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
+.debugOutput {
+  background: #1a1a2e;
+  color: #00d4ff;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  overflow-x: auto;
+  margin-bottom: 16px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.creds {
+  text-align: center;
+}
+
+.creds p {
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.creds code {
+  display: block;
+  background: white;
+  padding: 6px;
+  margin: 4px 0;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #00d4ff;
+  font-family: monospace;
+}
