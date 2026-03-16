@@ -8,14 +8,10 @@ import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
 
-// --- Dev Mode PrivateRoute (skip login) ---
+
 function PrivateRoute({ children }) {
-  // Dev bypass
   const { isAuthenticated } = useAuth()
-  // return children regardless of auth
-  return children
-  // Production me ye use karo:
-  // return isAuthenticated ? children : <Navigate to="/login" />
+  return isAuthenticated ? children : <Navigate to="/login" />
 }
 
 function App() {
