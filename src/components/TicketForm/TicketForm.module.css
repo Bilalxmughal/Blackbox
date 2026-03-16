@@ -1,0 +1,85 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroupFull {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label, .formGroupFull label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.formGroup input, .formGroupFull textarea {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.formGroup input:focus, .formGroupFull textarea:focus {
+  outline: none;
+  border-color: #00d4ff;
+}
+
+.readOnly {
+  background: #f5f6fa;
+  color: #666;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.cancelBtn {
+  padding: 12px 24px;
+  background: #f5f6fa;
+  color: #666;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cancelBtn:hover {
+  background: #e0e0e0;
+}
+
+.submitBtn {
+  padding: 12px 24px;
+  background: #00d4ff;
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.submitBtn:hover {
+  background: #00b8d9;
+}

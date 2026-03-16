@@ -1,0 +1,157 @@
+.container h2 {
+  margin-bottom: 25px;
+  color: #1a1a2e;
+}
+
+.categorySelect {
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.categorySelect label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 500;
+  color: #333;
+}
+
+.categorySelect select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.addSection {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.addSection input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #00d4ff;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.subCategoriesList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.subCategoryCard {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  border-left: 4px solid #9b59b6;
+}
+
+.subHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.subHeader h4 {
+  margin: 0;
+  color: #1a1a2e;
+}
+
+.deleteBtn {
+  width: 28px;
+  height: 28px;
+  background: #ff6b6b20;
+  color: #ff6b6b;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.deleteBtn:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+.usersSection label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #666;
+}
+
+.usersList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.userTag {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #00d4ff20;
+  color: #00d4ff;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.removeUser {
+  width: 18px;
+  height: 18px;
+  background: #ff6b6b;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addUser {
+  display: flex;
+  gap: 10px;
+}
+
+.addUser input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+.addUserBtn {
+  width: 36px;
+  height: 36px;
+  background: #6bcf7f;
+  color: white;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addUserBtn:hover {
+  background: #5ab969;
+}

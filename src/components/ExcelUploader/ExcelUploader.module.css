@@ -1,0 +1,96 @@
+.uploaderContainer {
+  margin-bottom: 20px;
+}
+
+.dropZone {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  background: #fafafa;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.dropZone.active {
+  border-color: #00d4ff;
+  background: #e6f9ff;
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadLabel {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.uploadIcon {
+  color: #00d4ff;
+}
+
+.uploadText {
+  font-size: 16px;
+  color: #333;
+  margin: 0;
+}
+
+.uploadText strong {
+  color: #00d4ff;
+}
+
+.uploadSubtext {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+}
+
+.filePreview {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: #e6f9ff;
+  border: 1px solid #00d4ff;
+  border-radius: 12px;
+}
+
+.fileIcon {
+  color: #00d4ff;
+}
+
+.fileInfo {
+  flex: 1;
+}
+
+.fileName {
+  font-weight: 600;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.fileStatus {
+  font-size: 13px;
+  color: #6bcf7f;
+  margin: 5px 0 0;
+}
+
+.clearBtn {
+  background: #ff6b6b;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.clearBtn:hover {
+  background: #ff5252;
+}

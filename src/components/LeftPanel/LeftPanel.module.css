@@ -1,0 +1,101 @@
+.leftPanel {
+  width: 260px;
+  height: 100vh;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  transition: width 0.3s ease;
+  z-index: 100;
+}
+
+.leftPanel.collapsed {
+  width: 70px;
+}
+
+.logoSection {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logoIcon {
+  font-size: 28px;
+}
+
+.logoText h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  color: #00d4ff;
+}
+
+.logoText span {
+  font-size: 12px;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.collapseBtn {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.collapseBtn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.navMenu {
+  flex: 1;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  color: #b8b8b8;
+  text-decoration: none;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+}
+
+.navItem:hover {
+  background: rgba(255,255,255,0.05);
+  color: white;
+}
+
+.navItem.active {
+  background: rgba(0,212,255,0.1);
+  color: #00d4ff;
+  border-left-color: #00d4ff;
+}
+
+.panelFooter {
+  padding: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 11px;
+  color: #666;
+  text-align: center;
+}
