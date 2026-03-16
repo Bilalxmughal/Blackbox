@@ -96,9 +96,9 @@ function Dashboard() {
       {analytics.companyCount > 0 && (
   <div className={styles.analyticsSection}>
     <h2>Company Routes Analysis</h2>
-    <div className={styles.companyGridCompact}>
+    <div className={styles.companyCardsRow}>
       {Object.entries(analytics.companyRoutes).map(([company, routeCount]) => (
-        <div key={company} className={styles.companyCardCompact}>
+        <div key={company} className={styles.companyCardModern}>
           <div className={styles.companyIcon}>
             <Building2 size={20} color="#00d4ff" />
           </div>
