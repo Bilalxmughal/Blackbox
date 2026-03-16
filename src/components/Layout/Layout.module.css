@@ -1,120 +1,66 @@
 .layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
-.sidebar {
+/* Left panel ab flex item hai, fixed nahi */
+.leftPanel {
   width: 260px;
-  background: #1a1a2e;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  position: fixed;
+  min-width: 260px;    /* Don't shrink */
   height: 100vh;
-  overflow-y: auto;
+  position: sticky;    /* Sticky instead of fixed */
+  top: 0;
+  align-self: flex-start;
 }
 
-.logo {
-  padding: 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+.mainContent {
+  margin-left: 260px;
+  width: calc(100% - 260px) !important;  /* !important add kiya */
+  max-width: calc(100% - 260px) !important;
+  overflow-x: hidden !important;
 }
 
-.logo h2 {
-  color: #00d4ff;
-  font-size: 24px;
-  margin: 0;
-}
-
-.nav {
-  flex: 1;
-  padding: 20px 0;
-}
-
-.navLink {
+.topHeader {
+  background: white;
+  padding: 20px 30px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 14px 24px;
-  color: rgba(255,255,255,0.7);
-  text-decoration: none;
-  transition: all 0.3s;
-  border-left: 3px solid transparent;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  position: sticky;    /* Add kiya */
+  top: 0;              /* Add kiya */
+  z-index: 10;         /* Add kiya */
 }
 
-.navLink:hover {
-  background: rgba(255,255,255,0.05);
-  color: white;
-}
-
-.navLink.active {
-  background: rgba(0, 212, 255, 0.1);
-  color: #00d4ff;
-  border-left-color: #00d4ff;
-}
-
-.userSection {
-  padding: 20px 24px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+.topHeader h2 {
+  margin: 0;
+  color: #1a1a2e;
+  font-size: 20px;
 }
 
 .userInfo {
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
-.userName {
-  display: block;
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.userRole {
-  display: block;
-  font-size: 12px;
-  color: #00d4ff;
-  text-transform: uppercase;
-  margin-top: 4px;
-}
-
-.logoutBtn {
-  width: 100%;
+.userAvatar {
+  width: 35px;
+  height: 35px;
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  color: white;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px;
-  background: rgba(255,107,107,0.2);
-  color: #ff6b6b;
-  border-radius: 6px;
-  font-size: 13px;
-  transition: all 0.3s;
+  font-weight: 600;
 }
 
-.logoutBtn:hover {
-  background: #ff6b6b;
-  color: white;
-}
-
-.main {
+.content {
   flex: 1;
-  margin-left: 260px;
-  background: #f5f6fa;
-  min-height: 100vh;
-  overflow-y: auto;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    position: relative;
-    height: auto;
-  }
-  
-  .layout {
-    flex-direction: column;
-  }
-  
-  .main {
-    margin-left: 0;
-  }
+  padding: 30px;
+  overflow-x: hidden;    /* auto se hidden kiya */
+  width: 100%;           /* Add kiya */
+  box-sizing: border-box;  /* Add kiya */
 }

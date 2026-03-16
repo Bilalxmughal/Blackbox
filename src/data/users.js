@@ -1,8 +1,10 @@
+// src/data/users.js
+
 export const ROLES = {
   SUPER_ADMIN: {
     id: 'super_admin',
     name: 'Super Admin',
-    permissions: ['all']
+    permissions: ['all'] // Sab kuch
   },
   ADMIN: {
     id: 'admin',
@@ -39,31 +41,10 @@ export const defaultUsers = [
     role: 'super_admin',
     status: 'active',
     createdAt: new Date().toISOString()
-  },
-  {
-    id: 'user-2',
-    name: 'Admin User',
-    email: 'admin@buscaro.com',
-    phone: '+92-300-7654321',
-    password: 'admin123',
-    department: 'HR',
-    role: 'admin',
-    status: 'active',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'user-3',
-    name: 'Ops User',
-    email: 'ops@buscaro.com',
-    phone: '+92-300-1112223',
-    password: 'admin123',
-    department: 'Operations',
-    role: 'ops',
-    status: 'active',
-    createdAt: new Date().toISOString()
   }
 ];
 
+// Pending Requests Storage
 export const getPendingRequests = () => {
   const saved = localStorage.getItem('pendingRequests');
   return saved ? JSON.parse(saved) : [];

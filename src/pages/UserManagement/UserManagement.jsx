@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, UserCheck, UserX, Shield, Clock, CheckCircle, XCircle } from 'lucide-react'
-import { ROLES, defaultUsers, defaultDepartments, getPendingRequests, savePendingRequest } from '../../data/users.js'
-import styles from './UserManagement.module.css'
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, Edit2, UserCheck, UserX, Shield, Clock, CheckCircle, XCircle, Eye } from 'lucide-react';
+import { ROLES, defaultUsers, defaultDepartments, getPendingRequests, savePendingRequest } from '../../data/users';
+import styles from './UserManagement.module.css';
 
 function UserManagement({ currentUser }) {
-  const [activeTab, setActiveTab] = useState('users')
-  const [users, setUsers] = useState([])
-  const [departments, setDepartments] = useState([])
-  const [pendingRequests, setPendingRequests] = useState([])
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'roles', 'requests'
+  const [users, setUsers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   
   // Modal States
-  const [showUserModal, setShowUserModal] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showDeptModal, setShowDeptModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   
   // Form States
   const [userForm, setUserForm] = useState({
@@ -22,56 +23,56 @@ function UserManagement({ currentUser }) {
     department: '',
     role: 'user',
     status: 'active'
-  })
-  const [newDept, setNewDept] = useState('')
+  });
+  const [newDept, setNewDept] = useState('');
 
-  // Load data on mount
+  // Load data
   useEffect(() => {
-    const savedUsers = localStorage.getItem('users')
-    const savedDepts = localStorage.getItem('departments')
+    const savedUsers = localStorage.getItem('users');
+    const savedDepts = localStorage.getItem('departments');
     
-    setUsers(savedUsers ? JSON.parse(savedUsers) : defaultUsers)
-    setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
-    setPendingRequests(getPendingRequests())
-  }, [])
+    setUsers(savedUsers ? JSON.parse(savedUsers) : defaultUsers);
+    setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments);
+    setPendingRequests(getPendingRequests());
+  }, []);
 
   // Permission checks
   const hasPermission = (permission) => {
-    if (!currentUser) return false
-    const role = Object.values(ROLES).find(r => r.id === currentUser.role)
-    if (!role) return false
-    if (role.permissions.includes('all')) return true
-    return role.permissions.includes(permission)
-  }
+    if (!currentUser) return false;
+    const role = Object.values(ROLES).find(r => r.id === currentUser.role);
+    if (!role) return false;
+    if (role.permissions.includes('all')) return true;
+    return role.permissions.includes(permission);
+  };
 
   const canEditUser = (targetUser) => {
-    if (currentUser?.role === 'super_admin') return true
-    if (currentUser?.role === 'admin' && targetUser.role !== 'super_admin') return true
-    return false
-  }
+    if (currentUser.role === 'super_admin') return true;
+    if (currentUser.role === 'admin' && targetUser.role !== 'super_admin') return true;
+    return false;
+  };
 
   const canDeleteUser = (targetUser) => {
-    if (currentUser?.role === 'super_admin') return true
-    if (currentUser?.role === 'admin' && targetUser.role !== 'super_admin' && targetUser.role !== 'admin') return true
-    return false
-  }
+    if (currentUser.role === 'super_admin') return true;
+    if (currentUser.role === 'admin' && targetUser.role !== 'super_admin' && targetUser.role !== 'admin') return true;
+    return false;
+  };
 
   // Save functions
   const saveUsers = (updated) => {
-    setUsers(updated)
-    localStorage.setItem('users', JSON.stringify(updated))
-  }
+    setUsers(updated);
+    localStorage.setItem('users', JSON.stringify(updated));
+  };
 
   const saveRequests = (updated) => {
-    setPendingRequests(updated)
-    localStorage.setItem('pendingRequests', JSON.stringify(updated))
-  }
+    setPendingRequests(updated);
+    localStorage.setItem('pendingRequests', JSON.stringify(updated));
+  };
 
   // User Actions
   const handleSaveUser = () => {
     if (!userForm.name || !userForm.email || !userForm.phone) {
-      alert('Please fill all required fields')
-      return
+      alert('Please fill all required fields');
+      return;
     }
 
     // OPS can only request
@@ -81,10 +82,10 @@ function UserManagement({ currentUser }) {
         data: userForm,
         requestedBy: currentUser.id,
         requestedByName: currentUser.name
-      })
-      alert('Request sent to Super Admin for approval!')
-      resetForm()
-      return
+      });
+      alert('Request sent to Super Admin for approval!');
+      resetForm();
+      return;
     }
 
     if (editingUser) {
@@ -96,29 +97,29 @@ function UserManagement({ currentUser }) {
           data: userForm,
           requestedBy: currentUser.id,
           requestedByName: currentUser.name
-        })
-        alert('Edit request sent to Super Admin!')
-        resetForm()
-        return
+        });
+        alert('Edit request sent to Super Admin!');
+        resetForm();
+        return;
       }
 
       // Direct edit for Admin/Super Admin
-      const updated = users.map(u => u.id === editingUser.id ? { ...u, ...userForm } : u)
-      saveUsers(updated)
+      const updated = users.map(u => u.id === editingUser.id ? { ...u, ...userForm } : u);
+      saveUsers(updated);
     } else {
       const newUser = {
         id: `user-${Date.now()}`,
         ...userForm,
         createdAt: new Date().toISOString()
-      }
-      saveUsers([...users, newUser])
+      };
+      saveUsers([...users, newUser]);
     }
     
-    resetForm()
-  }
+    resetForm();
+  };
 
   const handleEditClick = (user) => {
-    setEditingUser(user)
+    setEditingUser(user);
     setUserForm({
       name: user.name,
       email: user.email,
@@ -127,12 +128,12 @@ function UserManagement({ currentUser }) {
       department: user.department,
       role: user.role,
       status: user.status || 'active'
-    })
-    setShowUserModal(true)
-  }
+    });
+    setShowUserModal(true);
+  };
 
   const handleAddNew = () => {
-    setEditingUser(null)
+    setEditingUser(null);
     setUserForm({
       name: '',
       email: '',
@@ -141,13 +142,13 @@ function UserManagement({ currentUser }) {
       department: '',
       role: 'user',
       status: 'active'
-    })
-    setShowUserModal(true)
-  }
+    });
+    setShowUserModal(true);
+  };
 
   const resetForm = () => {
-    setShowUserModal(false)
-    setEditingUser(null)
+    setShowUserModal(false);
+    setEditingUser(null);
     setUserForm({
       name: '',
       email: '',
@@ -156,12 +157,13 @@ function UserManagement({ currentUser }) {
       department: '',
       role: 'user',
       status: 'active'
-    })
-  }
+    });
+  };
 
   const toggleUserStatus = (userId) => {
-    const user = users.find(u => u.id === userId)
+    const user = users.find(u => u.id === userId);
     
+    // OPS needs permission
     if (currentUser?.role === 'ops') {
       savePendingRequest({
         type: 'toggle_status',
@@ -169,31 +171,32 @@ function UserManagement({ currentUser }) {
         currentStatus: user.status,
         requestedBy: currentUser.id,
         requestedByName: currentUser.name
-      })
-      alert('Status change request sent!')
-      return
+      });
+      alert('Status change request sent!');
+      return;
     }
 
     const updated = users.map(u => 
       u.id === userId ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } : u
-    )
-    saveUsers(updated)
-  }
+    );
+    saveUsers(updated);
+  };
 
   const deleteUser = (id) => {
-    if (!confirm('Are you sure you want to delete this user?')) return
+    if (!confirm('Are you sure you want to delete this user?')) return;
     
+    // OPS cannot delete directly
     if (currentUser?.role === 'ops') {
-      alert('You do not have permission to delete users. Request Super Admin.')
-      return
+      alert('You do not have permission to delete users. Request Super Admin.');
+      return;
     }
 
-    saveUsers(users.filter(u => u.id !== id))
-  }
+    saveUsers(users.filter(u => u.id !== id));
+  };
 
   // Request Handling (Super Admin only)
   const handleRequestAction = (requestId, action) => {
-    const request = pendingRequests.find(r => r.id === requestId)
+    const request = pendingRequests.find(r => r.id === requestId);
     
     if (action === 'approve') {
       switch(request.type) {
@@ -202,54 +205,56 @@ function UserManagement({ currentUser }) {
             id: `user-${Date.now()}`,
             ...request.data,
             createdAt: new Date().toISOString()
-          }
-          saveUsers([...users, newUser])
-          break
+          };
+          saveUsers([...users, newUser]);
+          break;
           
         case 'edit_user':
           const updatedUsers = users.map(u => 
             u.id === request.userId ? { ...u, ...request.data } : u
-          )
-          saveUsers(updatedUsers)
-          break
+          );
+          saveUsers(updatedUsers);
+          break;
           
         case 'toggle_status':
+          const user = users.find(u => u.id === request.userId);
           const toggled = users.map(u => 
             u.id === request.userId 
               ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' } 
               : u
-          )
-          saveUsers(toggled)
-          break
+          );
+          saveUsers(toggled);
+          break;
       }
     }
     
-    const updatedRequests = pendingRequests.filter(r => r.id !== requestId)
-    saveRequests(updatedRequests)
-  }
+    const updatedRequests = pendingRequests.filter(r => r.id !== requestId);
+    saveRequests(updatedRequests);
+  };
 
   // Department Management
   const handleAddDepartment = () => {
-    if (!newDept) return
+    if (!newDept) return;
     const dept = {
       id: `dept-${Date.now()}`,
       name: newDept,
       users: []
-    }
-    const updated = [...departments, dept]
-    setDepartments(updated)
-    localStorage.setItem('departments', JSON.stringify(updated))
-    setNewDept('')
-  }
+    };
+    const updated = [...departments, dept];
+    setDepartments(updated);
+    localStorage.setItem('departments', JSON.stringify(updated));
+    setNewDept('');
+    setShowDeptModal(false);
+  };
 
   const getRoleBadgeColor = (role) => {
     switch(role) {
-      case 'super_admin': return styles.badgeRed
-      case 'admin': return styles.badgeOrange
-      case 'ops': return styles.badgeBlue
-      default: return styles.badgeGray
+      case 'super_admin': return styles.badgeRed;
+      case 'admin': return styles.badgeOrange;
+      case 'ops': return styles.badgeBlue;
+      default: return styles.badgeGray;
     }
-  }
+  };
 
   return (
     <div className={styles.container}>
@@ -332,7 +337,7 @@ function UserManagement({ currentUser }) {
                             <Edit2 size={16} />
                           </button>
                         )}
-                        {currentUser?.role === 'ops' && user.id !== currentUser.id && (
+                        {currentUser?.role === 'ops' && (
                           <button onClick={() => handleEditClick(user)} className={styles.requestBtn} title="Request Edit">
                             <Edit2 size={16} />
                           </button>
@@ -391,7 +396,7 @@ function UserManagement({ currentUser }) {
         </div>
       )}
 
-      {/* PENDING REQUESTS TAB */}
+      {/* PENDING REQUESTS TAB (Super Admin Only) */}
       {activeTab === 'requests' && currentUser?.role === 'super_admin' && (
         <div className={styles.requestsContainer}>
           {pendingRequests.length === 0 ? (
@@ -462,8 +467,8 @@ function UserManagement({ currentUser }) {
 
       {/* USER MODAL */}
       {showUserModal && (
-        <div className={styles.modalOverlay} onClick={resetForm}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
             <h3>{editingUser ? 'Edit User' : 'Add New User'}</h3>
             
             <div className={styles.formGroup}>
@@ -560,8 +565,26 @@ function UserManagement({ currentUser }) {
           </div>
         </div>
       )}
+
+      {/* DEPARTMENT MODAL */}
+      {showDeptModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modal}>
+            <h3>Add Department</h3>
+            <input
+              placeholder="Department Name"
+              value={newDept}
+              onChange={(e) => setNewDept(e.target.value)}
+            />
+            <div className={styles.modalActions}>
+              <button onClick={() => setShowDeptModal(false)} className={styles.cancelBtn}>Cancel</button>
+              <button onClick={handleAddDepartment} className={styles.saveBtn}>Add</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-export default UserManagement
+export default UserManagement;
