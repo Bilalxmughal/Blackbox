@@ -94,21 +94,23 @@ function Dashboard() {
 
       {/* Company Routes Analytics */}
       {analytics.companyCount > 0 && (
-        <div className={styles.analyticsSection}>
-          <h2>Company Routes Analysis</h2>
-          <div className={styles.companyGrid}>
-            {Object.entries(analytics.companyRoutes).map(([company, routeCount]) => (
-              <div key={company} className={styles.companyCard}>
-                <Building2 size={24} color="#00d4ff" />
-                <div>
-                  <h4>{company}</h4>
-                  <p><Route size={14} /> {routeCount} Routes</p>
-                </div>
-              </div>
-            ))}
+  <div className={styles.analyticsSection}>
+    <h2>Company Routes Analysis</h2>
+    <div className={styles.companyGridCompact}>
+      {Object.entries(analytics.companyRoutes).map(([company, routeCount]) => (
+        <div key={company} className={styles.companyCardCompact}>
+          <div className={styles.companyIcon}>
+            <Building2 size={20} color="#00d4ff" />
+          </div>
+          <div className={styles.companyInfo}>
+            <h4>{company}</h4>
+            <p><Route size={14} /> {routeCount} Routes</p>
           </div>
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
 
       <div className={styles.dashboardGrid}>
         <div className={styles.chartSection}>
