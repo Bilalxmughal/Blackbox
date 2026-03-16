@@ -1,90 +1,32 @@
-import { useState } from 'react'
-import { NavLink } from 'react-router-dom'
-import { 
-  LayoutDashboard, 
-  Database, 
-  ClipboardList, 
-  Settings, 
-  Users,
-  ChevronLeft, 
-  ChevronRight,
-  LogOut
-} from 'lucide-react'
-import { useAuth } from '../../context/AuthContext'
-import styles from './LeftPanel.module.css'
-import LeftPanel from '../LeftPanel/LeftPanel'  // ✅ Sahi hai
+import { Outlet } from 'react-router-dom'
+import { useAuth } from "../../context/AuthContext"
+import LeftPanel from '../LeftPanel/LeftPanel'
+import Footer from '../Footer/Footer'
+import styles from './Layout.module.css'
 
-const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Buscaro Ops Data', path: '/ops-data', icon: Database },
-  { name: 'Complaint Board', path: '/complaints', icon: ClipboardList },
-  { name: 'User Management', path: '/users', icon: Users },
-  { name: 'Backend Settings', path: '/backend', icon: Settings },
-]
-
-function LeftPanel() {
-  const [collapsed, setCollapsed] = useState(false)
-  const { currentUser, logout } = useAuth()
+function Layout() {
+  const { currentUser } = useAuth()
 
   return (
-    <aside className={`${styles.leftPanel} ${collapsed ? styles.collapsed : ''}`}>
-      <div className={styles.logoSection}>
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>🚌</span>
-          {!collapsed && (
-            <div className={styles.logoText}>
-              <h1>BusCaro</h1>
-              <span>BlackBox</span>
-            </div>
-          )}
-        </div>
-        <button 
-          className={styles.collapseBtn}
-          onClick={() => setCollapsed(!collapsed)}
-        >
-          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </button>
-      </div>
-
-      <nav className={styles.navMenu}>
-        {menuItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => 
-                `${styles.navItem} ${isActive ? styles.active : ''}`
-              }
-            >
-              <Icon size={20} />
-              {!collapsed && <span>{item.name}</span>}
-            </NavLink>
-          )
-        })}
-      </nav>
-
-      {/* User Section with Logout */}
-      <div className={styles.userSection}>
-        {!collapsed && (
+    <div className={styles.layout}>
+      <LeftPanel />
+      <div className={styles.mainContent}>
+        <header className={styles.topHeader}>
+          <h2>BusCaro - BlackBox CRM</h2>
           <div className={styles.userInfo}>
-            <span>{currentUser?.name || 'Guest'}</span>
-            <small>{currentUser?.department || 'No Dept'}</small>
+            <span>Welcome, {currentUser?.name || 'Admin'}</span>
+            <div className={styles.userAvatar}>
+              {(currentUser?.name || 'A')[0].toUpperCase()}
+            </div>
           </div>
-        )}
-        <button onClick={logout} className={styles.logoutBtn} title="Logout">
-          <LogOut size={18} />
-        </button>
+        </header>
+        <main className={styles.content}>
+          <Outlet />
+        </main>
+        <Footer />
       </div>
-
-      {!collapsed && (
-        <div className={styles.panelFooter}>
-          <p>v1.0.0</p>
-          <p>© 2024 BusCaro</p>
-        </div>
-      )}
-    </aside>
+    </div>
   )
 }
 
-export default LeftPanel
+export default Layout
