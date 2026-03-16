@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import styles from './LeftPanel.module.css'
+import LeftPanel from '../LeftPanel/LeftPanel'  // ✅ Sahi hai
 
 const menuItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
