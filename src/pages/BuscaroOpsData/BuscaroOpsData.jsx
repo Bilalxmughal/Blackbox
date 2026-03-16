@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Papa from 'papaparse'
 import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'lucide-react'
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
 import styles from './BuscaroOpsData.module.css'
@@ -18,21 +19,17 @@ function BuscaroOpsData({ isAdmin }) {
     const fetchSheetData = async () => {
       try {
         const res = await fetch(sheetCsvUrl)
-        const text = await res.text()
+        const csvText = await res.text()
         
-        const rows = text
-          .trim()
-          .split('\n')
-          .map(r => r.split(','))
-
-        const headers = rows[0]
-        const data = rows.slice(1).map(r =>
-          Object.fromEntries(r.map((val, i) => [headers[i], val]))
-        )
-
-        setOpsData(data)
-        localStorage.setItem('buscaroOpsData', JSON.stringify(data))
-        setLastUpdated(new Date().toLocaleString())
+        Papa.parse(csvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            setOpsData(results.data)
+            localStorage.setItem('buscaroOpsData', JSON.stringify(results.data))
+            setLastUpdated(new Date().toLocaleString())
+          }
+        })
       } catch (err) {
         console.error('Error fetching Google Sheet:', err)
         const saved = localStorage.getItem('buscaroOpsData')
@@ -77,24 +74,19 @@ function BuscaroOpsData({ isAdmin }) {
     a.click()
   }
 
-  const uniqueCompanies = [...new Set(opsData.map(item => item.company).filter(Boolean))]
-  const uniqueRoutes = [...new Set(opsData.map(item => item.routeName).filter(Boolean))]
+  const uniqueCompanies = [...new Set(opsData.map(item => item.Company).filter(Boolean))]
+  const uniqueRoutes = [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))]
 
   const mainColumns = [
-    { header: 'Captain ID', key: 'captainId' },
-    { header: 'Captain Name', key: 'captainName' },
-    { header: 'Vendor', key: 'vendorName' },
-    { header: 'Route', key: 'routeName' },
-    { header: 'Bus No', key: 'busNumber' },
-    { header: 'Status', key: 'status' }
+    { header: 'Captain ID', key: 'Captain ID' },
+    { header: 'Captain Name', key: 'Captain Name' },
+    { header: 'Vendor', key: 'Vendor Name' },
+    { header: 'Route', key: 'Route Name' },
+    { header: 'Bus No', key: 'Bus Number' },
+    { header: 'Status', key: 'Status' }
   ]
 
-  const allFields = [
-    'captainId', 'vendorName', 'captainName', 'busNumber', 'vehicleId',
-    'paymentTerms', 'engine', 'vehicleCategory', 'busType', 'seats',
-    'trackerStatus', 'routeName', 'company', 'rent', 'status',
-    'captainPersonalMobile', 'captainCnic', 'vendorNumber', 'iban'
-  ]
+  const allFields = Object.keys(opsData[0] || {})
 
   return (
     <div className={styles.container}>
@@ -173,19 +165,15 @@ function BuscaroOpsData({ isAdmin }) {
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((row) => (
+            {filteredData.map((row, index) => (
               <>
-                <tr key={row.id} className={styles.mainRow}>
+                <tr key={index} className={styles.mainRow}>
                   <td>
                     <button
                       className={styles.expandBtn}
-                      onClick={() => toggleRow(row.id)}
+                      onClick={() => toggleRow(index)}
                     >
-                      {expandedRows[row.id] ? (
-                        <ChevronUp size={16} />
-                      ) : (
-                        <ChevronDown size={16} />
-                      )}
+                      {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                   </td>
 
@@ -194,17 +182,13 @@ function BuscaroOpsData({ isAdmin }) {
                   ))}
                 </tr>
 
-                {expandedRows[row.id] && (
+                {expandedRows[index] && (
                   <tr className={styles.expandedRow}>
                     <td colSpan={mainColumns.length + 1}>
                       <div className={styles.detailsGrid}>
                         {allFields.map(field => (
                           <div key={field} className={styles.detailItem}>
-                            <label>
-                              {field
-                                .replace(/([A-Z])/g, ' $1')
-                                .replace(/^./, str => str.toUpperCase())}
-                            </label>
+                            <label>{field}</label>
                             <span>{row[field] || '-'}</span>
                           </div>
                         ))}
