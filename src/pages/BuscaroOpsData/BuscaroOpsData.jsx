@@ -39,23 +39,20 @@ function BuscaroOpsData({ isAdmin }) {
   ]
 
   // Format date to DD-MM-YYYY hh:MM AM/PM
-const formatDate = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  const day = String(d.getDate()).padStart(2, '0')
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = d.getFullYear()
+  const formatDate = (date) => {
+    if (!date) return ''
+    const d = new Date(date)
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    let hours = d.getHours()
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    const ampm = hours >= 12 ? 'PM' : 'AM'
+    hours = hours % 12
+    hours = hours ? hours : 12
+    return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`
+  }
 
-  let hours = d.getHours()
-  const minutes = String(d.getMinutes()).padStart(2, '0')
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  hours = hours % 12
-  hours = hours ? hours : 12 // 0 => 12
-
-  return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`
-}
-
-  // Fetch sheet data
   const fetchSheetData = useCallback(async () => {
     try {
       const res = await fetch(sheetCsvUrl)
@@ -220,24 +217,25 @@ const formatDate = (date) => {
                 ))}
               </tr>
             ))}
+            {/* Expanded rows inside table */}
+            {filteredData.map((row, index) =>
+              expandedRows[index] ? (
+                <tr key={`expanded-${index}`} className={styles.expandedRow}>
+                  <td colSpan={mainColumns.length + 1}>
+                    <div className={styles.detailsGrid}>
+                      {allFields.map(field => (
+                        <div key={field} className={styles.detailItem}>
+                          <label>{field}</label>
+                          <span>{row[field] || '-'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ) : null
+            )}
           </tbody>
         </table>
-
-        {/* Expanded row details */}
-        {filteredData.map((row, index) =>
-          expandedRows[index] ? (
-            <div key={`expanded-${index}`} className={styles.expandedRow}>
-              <div className={styles.detailsGrid}>
-                {allFields.map(field => (
-                  <div key={field} className={styles.detailItem}>
-                    <label>{field}</label>
-                    <span>{row[field] || '-'}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null
-        )}
       </div>
     </div>
   )
