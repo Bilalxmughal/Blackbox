@@ -1,7 +1,3 @@
-/* ========================================
-   COMPLAINT BOARD - COMPLETE STYLES
-   ======================================== */
-
 .container {
   padding: 24px;
   max-width: 1600px;
@@ -38,7 +34,6 @@
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.2s;
 }
 
 .addBtn:hover {
@@ -46,12 +41,23 @@
   box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
 }
 
-/* Stats Grid */
+/* Stats Section */
+.statsSection {
+  margin-bottom: 24px;
+}
+
+.statsSection h3 {
+  color: #666;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .statCard {
@@ -59,25 +65,34 @@
   align-items: center;
   gap: 12px;
   background: white;
-  padding: 20px;
+  padding: 16px 20px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   border: 1px solid #f0f0f0;
 }
 
+.statCard.myTickets {
+  background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
+  border-color: #00d4ff;
+}
+
+.statCard.myTickets .statValue {
+  color: #00d4ff;
+}
+
 .statValue {
   display: block;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #1a1a2e;
 }
 
 .statLabel {
-  font-size: 13px;
+  font-size: 12px;
   color: #888;
 }
 
-/* Filters Bar */
+/* Filters */
 .filtersBar {
   display: flex;
   gap: 12px;
@@ -87,13 +102,12 @@
 }
 
 .searchBox {
-  flex: 1;
-  min-width: 250px;
+  width: 280px;
   display: flex;
   align-items: center;
   gap: 12px;
   background: white;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 10px;
   border: 2px solid #e0e0e0;
 }
@@ -105,65 +119,77 @@
   background: transparent;
 }
 
-.searchBox input:focus {
-  outline: none;
-}
-
 .filterGroup {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  flex: 1;
 }
 
 .filterGroup select {
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 2px solid #e0e0e0;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   background: white;
-  cursor: pointer;
-  min-width: 150px;
+  min-width: 140px;
 }
 
 .clearBtn {
-  padding: 12px 20px;
+  padding: 10px 18px;
   background: #f5f5f5;
   color: #666;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
 }
 
-.clearBtn:hover {
-  background: #e0e0e0;
+.secondaryFilters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
-/* Date Filter */
 .dateFilter {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-  padding: 12px 16px;
+  gap: 10px;
+  padding: 8px 14px;
   background: white;
   border-radius: 10px;
   border: 1px solid #e0e0e0;
-  width: fit-content;
 }
 
 .dateFilter span {
   color: #888;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .dateFilter input {
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
-/* Table Container */
+.companyFilter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.companyFilter select {
+  padding: 10px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 13px;
+  background: white;
+  min-width: 160px;
+}
+
+/* Table */
 .tableContainer {
   background: white;
   border-radius: 16px;
@@ -200,7 +226,6 @@
   background: #fafafa;
 }
 
-/* Table Cells */
 .dateCell {
   font-weight: 500;
   color: #1a1a2e;
@@ -253,12 +278,70 @@
   color: #ef6c00;
 }
 
+/* STATUS BADGES - WITH COLORS */
 .statusBadge {
-  display: inline-block;
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusBadge.open {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.statusBadge.inprogress {
+  background: #fff8e1;
+  color: #f57f17;
+}
+
+.statusBadge.closed {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Resolve Ratio */
+.resolveRatio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ratioBar {
+  width: 60px;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ratioFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+.ratioFill.high {
+  background: #4caf50;
+}
+
+.ratioFill.medium {
+  background: #ff9800;
+}
+
+.ratioFill.low {
+  background: #f44336;
+}
+
+.ratioText {
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
   white-space: nowrap;
 }
 
@@ -268,8 +351,7 @@
   gap: 8px;
 }
 
-.viewBtn,
-.commentBtn {
+.viewBtn, .commentBtn {
   position: relative;
   width: 32px;
   height: 32px;
@@ -315,7 +397,6 @@
   justify-content: center;
 }
 
-/* Empty State */
 .emptyState {
   text-align: center;
   padding: 60px 20px;
@@ -328,15 +409,7 @@
   color: #666;
 }
 
-.emptyState span {
-  font-size: 13px;
-  color: #888;
-}
-
-/* ========================================
-   MODAL STYLES
-   ======================================== */
-
+/* Modal Styles */
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -356,33 +429,27 @@
   background: white;
   border-radius: 20px;
   width: 100%;
-  max-width: 700px;
-  max-height: 90vh;
+  max-width: 900px;
+  max-height: 95vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0,0,0,0.3);
   animation: modalSlide 0.3s ease;
 }
 
 .detailModal {
-  max-width: 800px;
+  max-width: 1000px;
 }
 
 @keyframes modalSlide {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modalHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px;
+  padding: 24px 28px;
   border-bottom: 1px solid #f0f0f0;
 }
 
@@ -391,20 +458,20 @@
   align-items: center;
   gap: 10px;
   color: #1a1a2e;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .subHeader {
   display: block;
   color: #888;
-  font-size: 13px;
+  font-size: 14px;
   margin-top: 4px;
   font-weight: normal;
 }
 
 .closeBtn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   background: #f5f5f5;
   color: #666;
@@ -419,28 +486,28 @@
   color: white;
 }
 
-/* Form Styles */
+/* Form */
 .form {
-  padding: 24px;
+  padding: 28px;
   overflow-y: auto;
-  max-height: 70vh;
+  max-height: 75vh;
 }
 
 .formRow {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .formGroup label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #555;
   text-transform: uppercase;
@@ -450,10 +517,10 @@
 .formGroup input,
 .formGroup select,
 .formGroupFull textarea {
-  padding: 12px 14px;
+  padding: 14px 16px;
   border: 2px solid #e0e0e0;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   transition: border-color 0.2s;
 }
 
@@ -464,28 +531,28 @@
   border-color: #00d4ff;
 }
 
-.formGroup input:disabled,
-.formGroup select:disabled {
-  background: #f5f5f5;
-  color: #666;
-}
-
 .readOnly {
   background: #f8f9fa !important;
   color: #666;
   cursor: not-allowed;
 }
 
+.noUsers {
+  color: #ff6b6b;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 .formGroupFull {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .formGroupFull label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #555;
   text-transform: uppercase;
@@ -494,38 +561,33 @@
 
 .formGroupFull textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 120px;
 }
 
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding-top: 20px;
+  gap: 14px;
+  padding-top: 24px;
   border-top: 1px solid #f0f0f0;
 }
 
 .cancelBtn {
-  padding: 12px 24px;
+  padding: 14px 28px;
   background: #f5f5f5;
   color: #666;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 500;
 }
 
 .submitBtn {
-  padding: 12px 32px;
+  padding: 14px 36px;
   background: linear-gradient(135deg, #00d4ff, #00b8d9);
   color: white;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 600;
-}
-
-.submitBtn:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
 }
 
 .submitBtn:disabled {
@@ -533,33 +595,26 @@
   cursor: not-allowed;
 }
 
-/* ========================================
-   DETAIL MODAL - TABS
-   ======================================== */
-
+/* Tabs */
 .tabs {
   display: flex;
   gap: 4px;
-  padding: 0 24px;
+  padding: 0 28px;
   border-bottom: 2px solid #f0f0f0;
   background: #fafafa;
 }
 
 .tabs button {
-  padding: 16px 24px;
+  padding: 18px 28px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #888;
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: -2px;
-}
-
-.tabs button:hover {
-  color: #00d4ff;
 }
 
 .tabs button.active {
@@ -569,8 +624,8 @@
 }
 
 .tabContent {
-  padding: 24px;
-  max-height: 60vh;
+  padding: 28px;
+  max-height: 65vh;
   overflow-y: auto;
 }
 
@@ -578,38 +633,45 @@
 .detailsTab {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
+/* STATUS CONTROL - NO BORDERS */
 .statusControl {
   background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 24px;
+  border-radius: 16px;
 }
 
 .statusControl label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #666;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .statusButtons {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .statusBtn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 500;
-  border: 2px solid;
+  border: none;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.statusBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .statusBtn:disabled {
@@ -619,35 +681,35 @@
 
 .permissionNote {
   display: block;
-  margin-top: 10px;
-  font-size: 12px;
+  margin-top: 12px;
+  font-size: 13px;
   color: #ff6b6b;
 }
 
 .detailsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
 }
 
 .detailItem {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px;
+  gap: 8px;
+  padding: 20px;
   background: #f8f9fa;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .detailItem label {
-  font-size: 11px;
+  font-size: 12px;
   color: #888;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .detailItem span {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: #1a1a2e;
 }
@@ -659,9 +721,9 @@
 
 .priority {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -688,53 +750,54 @@
 
 .issueBox {
   background: #fff8e1;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 24px;
+  border-radius: 16px;
   border-left: 4px solid #ffc107;
 }
 
 .issueBox label {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #f57f17;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .issueBox p {
   color: #444;
   line-height: 1.6;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 /* Comments Tab */
 .commentsTab {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .commentsList {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 300px;
+  max-height: 350px;
   overflow-y: auto;
-  padding-right: 10px;
+  padding-right: 12px;
 }
 
 .noComments {
   text-align: center;
   color: #888;
-  padding: 40px;
+  padding: 50px 20px;
   font-style: italic;
+  font-size: 15px;
 }
 
 .commentItem {
   background: #f8f9fa;
-  padding: 16px;
-  border-radius: 12px;
+  padding: 20px;
+  border-radius: 14px;
   border-left: 3px solid #00d4ff;
 }
 
@@ -742,41 +805,41 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .commentAuthor {
   font-weight: 600;
   color: #1a1a2e;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .commentTime {
-  font-size: 11px;
+  font-size: 12px;
   color: #888;
 }
 
 .commentText {
   color: #555;
   line-height: 1.5;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .commentInput {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 20px;
+  gap: 14px;
+  padding-top: 24px;
   border-top: 1px solid #f0f0f0;
 }
 
 .commentInput textarea {
-  padding: 14px;
+  padding: 16px;
   border: 2px solid #e0e0e0;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: 14px;
+  font-size: 15px;
   resize: vertical;
-  min-height: 80px;
+  min-height: 100px;
 }
 
 .commentInput textarea:focus {
@@ -789,11 +852,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 14px 28px;
   background: linear-gradient(135deg, #00d4ff, #00b8d9);
   color: white;
-  border-radius: 10px;
-  font-size: 14px;
+  border-radius: 12px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -810,14 +873,14 @@
 .timeline {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
   position: relative;
 }
 
 .timeline::before {
   content: '';
   position: absolute;
-  left: 6px;
+  left: 7px;
   top: 0;
   bottom: 0;
   width: 2px;
@@ -826,16 +889,16 @@
 
 .timelineItem {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   position: relative;
-  padding-left: 30px;
+  padding-left: 36px;
 }
 
 .timelineDot {
   position: absolute;
   left: 0;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   background: #00d4ff;
   border-radius: 50%;
   border: 3px solid white;
@@ -844,20 +907,20 @@
 
 .timelineContent {
   background: #f8f9fa;
-  padding: 14px 16px;
-  border-radius: 10px;
+  padding: 18px;
+  border-radius: 12px;
   flex: 1;
 }
 
 .timelineContent p {
   color: #444;
-  font-size: 14px;
-  margin-bottom: 6px;
+  font-size: 15px;
+  margin-bottom: 8px;
 }
 
 .timelineContent span {
   color: #888;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* Responsive */
@@ -866,24 +929,24 @@
     grid-template-columns: 1fr;
   }
   
-  .filtersBar {
-    flex-direction: column;
+  .modal, .detailModal {
+    max-width: 95vw;
   }
   
-  .filterGroup {
+  .searchBox {
     width: 100%;
   }
   
-  .filterGroup select {
-    flex: 1;
+  .secondaryFilters {
+    flex-direction: column;
+    align-items: stretch;
   }
   
-  .complaintsTable {
-    font-size: 12px;
+  .statusButtons {
+    flex-direction: column;
   }
   
-  .complaintsTable th,
-  .complaintsTable td {
-    padding: 10px 8px;
+  .statusBtn {
+    width: 100%;
   }
 }
