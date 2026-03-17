@@ -23,7 +23,6 @@ function Layout() {
         <main className={styles.content}>
           <Outlet />
         </main>
-        <Footer />
       </div>
     </div>
   )
