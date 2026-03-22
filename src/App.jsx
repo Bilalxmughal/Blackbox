@@ -5,6 +5,7 @@ import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import BuscaroOpsData from './pages/BuscaroOpsData/BuscaroOpsData'
 import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
+import ComplaintDetail from './pages/ComplaintDetail/ComplaintDetail'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
 
@@ -27,6 +28,7 @@ function App() {
             <Route index element={<Dashboard />} />
             <Route path="ops-data" element={<BuscaroOpsData />} />
             <Route path="complaints" element={<ComplaintBoard />} />
+            <Route path="complaints/:id" element={<ComplaintDetail />} />
             <Route path="backend" element={<BackendSettings />} />
             <Route path="users" element={<UserManagement />} />
           </Route>

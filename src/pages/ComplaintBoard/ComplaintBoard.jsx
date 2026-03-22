@@ -8,7 +8,7 @@ import {
   User,
   Building2,
   X,
-  Send,
+  
   Clock,
   CheckCircle2,
   AlertCircle
@@ -23,6 +23,7 @@ import {
 import { initialCategories } from '../../data/initialCategories'
 import { defaultDepartments } from '../../data/users'
 import styles from './ComplaintBoard.module.css'
+import { useNavigate } from 'react-router-dom'
 
 // Calculate resolve ratio based on time
 const calculateResolveRatio = (complaint) => {
@@ -40,22 +41,23 @@ const calculateResolveRatio = (complaint) => {
   if (resolved && hoursDiff <= 24) {
     return { ratio: 100, label: '100%', color: 'high' }
   }
-  
+
   if (!resolved && hoursDiff <= 24) {
     const ratio = Math.round((hoursDiff / 24) * 100)
     return { ratio, label: `${ratio}%`, color: 'medium' }
   }
-  
+
   if (resolved) {
     const ratio = Math.max(10, Math.round(100 / daysDiff))
     return { ratio, label: `${ratio}%`, color: ratio >= 50 ? 'medium' : 'low' }
   }
-  
+
   return { ratio: Math.max(5, Math.round(50 / daysDiff)), label: 'Overdue', color: 'low' }
 }
 
 function ComplaintBoard() {
   const { currentUser } = useAuth()
+  const navigate = useNavigate()
   
   // Data States
   const [complaints, setComplaints] = useState([])
@@ -66,10 +68,8 @@ function ComplaintBoard() {
   
   // UI States
   const [showAddModal, setShowAddModal] = useState(false)
-  const [showDetailModal, setShowDetailModal] = useState(false)
-  const [selectedComplaint, setSelectedComplaint] = useState(null)
-  const [activeTab, setActiveTab] = useState('details')
   
+
   // Filter States
   const [filters, setFilters] = useState({
     search: '',
@@ -81,11 +81,13 @@ function ComplaintBoard() {
     dateTo: ''
   })
   
-  // Form State
+  // ✅ CHANGE 1: busNumber aur vendorContact add kiye
   const [formData, setFormData] = useState({
     routeName: '',
     accountName: '',
     vendorName: '',
+    vendorContact: '',   // NEW
+    busNumber: '',       // NEW
     captainName: '',
     captainContact: '',
     company: '',
@@ -101,8 +103,7 @@ function ComplaintBoard() {
     priority: 'medium'
   })
   
-  // Comment State
-  const [newComment, setNewComment] = useState('')
+
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Load all data
@@ -110,40 +111,39 @@ function ComplaintBoard() {
     const loadData = () => {
       const savedComplaints = localStorage.getItem('complaints')
       setComplaints(savedComplaints ? JSON.parse(savedComplaints) : [])
-      
+
       const savedCats = localStorage.getItem('categories')
       setCategories(savedCats ? JSON.parse(savedCats) : initialCategories)
-      
+
       const savedDepts = localStorage.getItem('departments')
       setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
-      
+
       const savedOps = localStorage.getItem('buscaroOpsData')
-      if (savedOps) {
-        setOpsData(JSON.parse(savedOps))
-      }
-      
+      if (savedOps) setOpsData(JSON.parse(savedOps))
       const savedUsers = localStorage.getItem('users')
       setUsers(savedUsers ? JSON.parse(savedUsers) : [])
     }
-    
+
     loadData()
     const interval = setInterval(loadData, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // Auto-fill from route selection
+  // ✅ CHANGE 2: Auto-fill mein vendorContact aur busNumber add kiye
   useEffect(() => {
     if (!formData.routeName || !opsData.length) return
-    
+
     const routeData = opsData.find(item => 
       item['Route Name']?.toString().trim() === formData.routeName.toString().trim()
     )
-    
+
     if (routeData) {
       setFormData(prev => ({
         ...prev,
         accountName: routeData['Vendor Name'] || routeData['Captain Name'] || '',
         vendorName: routeData['Vendor Name'] || '',
+        vendorContact: routeData['Vendor Number'] || '',   // NEW
+        busNumber: routeData['Bus Number'] || '',          // NEW
         captainName: routeData['Captain Name'] || '',
         captainContact: routeData['Captain Personal Mobile'] || '',
         company: routeData['Company'] || ''
@@ -151,13 +151,13 @@ function ComplaintBoard() {
     }
   }, [formData.routeName, opsData])
 
-  // Get available users for selected department
+
   const availableUsers = useMemo(() => {
     if (!formData.assignedDept) return []
     return users.filter(u => u.department === formData.assignedDept && u.status === 'active')
   }, [formData.assignedDept, users])
 
-  // Get unique values for filters
+
   const filterOptions = useMemo(() => {
     const companies = [...new Set(opsData.map(item => item['Company']).filter(Boolean))]
     const deptNames = departments.map(d => d.name)
@@ -165,7 +165,7 @@ function ComplaintBoard() {
     return { companies, deptNames, userNames }
   }, [opsData, departments, complaints])
 
-  // Filter complaints
+
   const filteredComplaints = useMemo(() => {
     return complaints.filter(c => {
       const matchesSearch = 
@@ -173,25 +173,20 @@ function ComplaintBoard() {
         c.routeName?.toLowerCase().includes(filters.search.toLowerCase()) ||
         c.captainName?.toLowerCase().includes(filters.search.toLowerCase()) ||
         c.issueDetails?.toLowerCase().includes(filters.search.toLowerCase())
-      
+
       const matchesDept = filters.department === 'all' || c.assignedDept === filters.department
       const matchesUser = filters.assignedTo === 'all' || c.assignedTo === filters.assignedTo
       const matchesStatus = filters.status === 'all' || c.ticketStatus === filters.status
       const matchesCompany = filters.company === 'all' || c.company === filters.company
-      
+
       let matchesDate = true
-      if (filters.dateFrom) {
-        matchesDate = new Date(c.date) >= new Date(filters.dateFrom)
-      }
-      if (filters.dateTo && matchesDate) {
-        matchesDate = new Date(c.date) <= new Date(filters.dateTo)
-      }
-      
+      if (filters.dateFrom) matchesDate = new Date(c.date) >= new Date(filters.dateFrom)
+      if (filters.dateTo && matchesDate) matchesDate = new Date(c.date) <= new Date(filters.dateTo)
       return matchesSearch && matchesDept && matchesUser && matchesStatus && matchesCompany && matchesDate
     }).sort((a, b) => new Date(b.date) - new Date(a.date))
   }, [complaints, filters])
 
-  // MY TICKETS STATS
+
   const myStats = useMemo(() => {
     const myTickets = complaints.filter(c => c.submittedById === currentUser?.id)
     return {
@@ -202,27 +197,28 @@ function ComplaintBoard() {
     }
   }, [complaints, currentUser])
 
-  // Save complaints
+
   const saveComplaints = useCallback((updated) => {
     setComplaints(updated)
     localStorage.setItem('complaints', JSON.stringify(updated))
   }, [])
 
-  // Handle form submit
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     try {
       if (!formData.assignedTo || !formData.assignedToName) {
         alert('Please select a user to assign this complaint')
         setIsSubmitting(false)
         return
       }
-      
+
       const category = categories.find(c => c.id === formData.issueCategory)
       const ticketNo = generateTicketNo(category?.code || 'GEN', new Date().toISOString())
       
+      // ✅ CHANGE 3: newComplaint mein vendorContact aur busNumber save ho rahe hain
       const newComplaint = {
         id: `comp-${Date.now()}`,
         ticketNo,
@@ -234,6 +230,8 @@ function ComplaintBoard() {
         company: formData.company,
         accountName: formData.accountName,
         vendorName: formData.vendorName,
+        vendorContact: formData.vendorContact,   // NEW
+        busNumber: formData.busNumber,            // NEW
         captainName: formData.captainName,
         captainContact: formData.captainContact,
         assignedDept: formData.assignedDept,
@@ -259,12 +257,12 @@ function ComplaintBoard() {
           timestamp: new Date().toISOString()
         }]
       }
-      
+
       const updated = [newComplaint, ...complaints]
       saveComplaints(updated)
       resetForm()
       setShowAddModal(false)
-      
+
     } finally {
       setIsSubmitting(false)
     }
@@ -275,6 +273,8 @@ function ComplaintBoard() {
       routeName: '',
       accountName: '',
       vendorName: '',
+      vendorContact: '',
+      busNumber: '',
       captainName: '',
       captainContact: '',
       company: '',
@@ -290,91 +290,10 @@ function ComplaintBoard() {
       priority: 'medium'
     })
   }
-
-  // Add comment - INSTANT UPDATE
-  const addComment = useCallback(() => {
-    if (!newComment.trim() || !selectedComplaint) return
-    
-    const comment = {
-      id: `cmt-${Date.now()}`,
-      text: newComment.trim(),
-      by: currentUser?.name,
-      userId: currentUser?.id,
-      timestamp: new Date().toISOString(),
-      type: 'comment'
-    }
-    
-    const updatedComplaint = {
-      ...selectedComplaint,
-      comments: [...(selectedComplaint.comments || []), comment],
-      activityLog: [
-        ...(selectedComplaint.activityLog || []),
-        {
-          id: `act-${Date.now()}`,
-          type: 'comment',
-          text: `Comment added by ${currentUser?.name}`,
-          by: currentUser?.name,
-          timestamp: new Date().toISOString()
-        }
-      ]
-    }
-    
-    setSelectedComplaint(updatedComplaint)
-    
-    const updatedList = complaints.map(c => 
-      c.id === selectedComplaint.id ? updatedComplaint : c
-    )
-    saveComplaints(updatedList)
-    
-    setNewComment('')
-  }, [newComment, selectedComplaint, currentUser, complaints, saveComplaints])
-
-  // Update status
-  const updateStatus = useCallback((newStatus) => {
-    if (!selectedComplaint) return
-    
-    const canChange = 
-      selectedComplaint.assignedTo === currentUser?.name ||
-      currentUser?.role === 'admin' ||
-      currentUser?.role === 'super_admin'
-    
-    if (!canChange) {
-      alert('Only assigned user or Admin can change status')
-      return
-    }
-    
-    const updatedComplaint = {
-      ...selectedComplaint,
-      ticketStatus: newStatus,
-      complaintStatus: newStatus === 'Closed' ? 'Resolved' : newStatus === 'In Progress' ? 'In Progress' : 'Pending',
-      resolvedPercent: newStatus === 'Closed' ? 100 : newStatus === 'In Progress' ? 50 : 0,
-      resolvedDate: newStatus === 'Closed' ? new Date().toISOString() : null,
-      activityLog: [
-        ...(selectedComplaint.activityLog || []),
-        {
-          id: `act-${Date.now()}`,
-          type: 'status_change',
-          text: `Status changed to ${newStatus} by ${currentUser?.name}`,
-          by: currentUser?.name,
-          fromStatus: selectedComplaint.ticketStatus,
-          toStatus: newStatus,
-          timestamp: new Date().toISOString()
-        }
-      ]
-    }
-    
-    setSelectedComplaint(updatedComplaint)
-    
-    const updatedList = complaints.map(c => 
-      c.id === selectedComplaint.id ? updatedComplaint : c
-    )
-    saveComplaints(updatedList)
-  }, [selectedComplaint, currentUser, complaints, saveComplaints])
+  
 
   const openDetail = (complaint) => {
-    setSelectedComplaint(complaint)
-    setActiveTab('details')
-    setShowDetailModal(true)
+    navigate(`/complaints/${complaint.id}`)
   }
 
   const uniqueRoutes = useMemo(() => {
@@ -396,7 +315,7 @@ function ComplaintBoard() {
         </button>
       </div>
 
-      {/* MY TICKETS STATS - NEW */}
+      {/* MY TICKETS STATS */}
       <div className={styles.statsSection}>
         <h3>My Tickets Overview</h3>
         <div className={styles.statsGrid}>
@@ -431,7 +350,7 @@ function ComplaintBoard() {
         </div>
       </div>
 
-      {/* Filters Bar - REORGANIZED */}
+      {/* Filters Bar */}
       <div className={styles.filtersBar}>
         <div className={styles.searchBox}>
           <Search size={18} />
@@ -442,24 +361,24 @@ function ComplaintBoard() {
             onChange={(e) => setFilters({...filters, search: e.target.value})}
           />
         </div>
-        
+
         <div className={styles.filterGroup}>
           <select value={filters.department} onChange={(e) => setFilters({...filters, department: e.target.value})}>
             <option value="all">All Departments</option>
             {filterOptions.deptNames.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          
+
           <select value={filters.assignedTo} onChange={(e) => setFilters({...filters, assignedTo: e.target.value})}>
             <option value="all">All Users</option>
             {filterOptions.userNames.map(u => <option key={u} value={u}>{u}</option>)}
           </select>
-          
+
           <select value={filters.status} onChange={(e) => setFilters({...filters, status: e.target.value})}>
             <option value="all">All Status</option>
             {Object.values(TICKET_STATUS).map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
-        
+
         <button className={styles.clearBtn} onClick={() => setFilters({
           search: '', department: 'all', assignedTo: 'all', status: 'all', company: 'all', dateFrom: '', dateTo: ''
         })}>
@@ -467,7 +386,7 @@ function ComplaintBoard() {
         </button>
       </div>
 
-      {/* Secondary Filters - Date & Company */}
+      {/* Secondary Filters */}
       <div className={styles.secondaryFilters}>
         <div className={styles.dateFilter}>
           <Calendar size={16} />
@@ -475,7 +394,7 @@ function ComplaintBoard() {
           <span>to</span>
           <input type="date" value={filters.dateTo} onChange={(e) => setFilters({...filters, dateTo: e.target.value})} />
         </div>
-        
+
         <div className={styles.companyFilter}>
           <Building2 size={16} color="#666" />
           <select value={filters.company} onChange={(e) => setFilters({...filters, company: e.target.value})}>
@@ -568,7 +487,7 @@ function ComplaintBoard() {
         )}
       </div>
 
-      {/* ADD MODAL - Click outside closes */}
+      {/* ADD MODAL */}
       {showAddModal && (
         <div className={styles.modalOverlay} onClick={(e) => { if(e.target === e.currentTarget) setShowAddModal(false) }}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -605,14 +524,25 @@ function ComplaintBoard() {
                 </div>
               </div>
 
-              <div className={styles.formRow}>
+              <div className={styles.formRow}>   
                 <div className={styles.formGroup}>
                   <label>Vendor Name</label>
                   <input type="text" value={formData.vendorName} readOnly className={styles.readOnly} />
                 </div>
                 <div className={styles.formGroup}>
+                  <label>Vendor Contact</label>
+                  <input type="text" value={formData.vendorContact} readOnly className={styles.readOnly} />
+                </div>
+              </div>
+
+              <div className={styles.formRow}>  
+                <div className={styles.formGroup}>
                   <label>Account Name</label>
                   <input type="text" value={formData.accountName} readOnly className={styles.readOnly} />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>Bus Number</label>
+                  <input type="text" value={formData.busNumber} readOnly className={styles.readOnly} />
                 </div>
               </div>
 
@@ -700,128 +630,6 @@ function ComplaintBoard() {
         </div>
       )}
 
-      {/* DETAIL MODAL - NO click outside, only close button */}
-      {showDetailModal && selectedComplaint && (
-        <div className={styles.modalOverlay}>
-          <div className={`${styles.modal} ${styles.detailModal}`}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>{selectedComplaint.ticketNo}</h2>
-                <span className={styles.subHeader}>Created {formatDateDDMMYYYY(selectedComplaint.date)} by {selectedComplaint.submittedBy}</span>
-              </div>
-              <button className={styles.closeBtn} onClick={() => setShowDetailModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className={styles.tabs}>
-              <button className={activeTab === 'details' ? styles.active : ''} onClick={() => setActiveTab('details')}>Details</button>
-              <button className={activeTab === 'comments' ? styles.active : ''} onClick={() => setActiveTab('comments')}>Comments ({selectedComplaint.comments?.length || 0})</button>
-              <button className={activeTab === 'history' ? styles.active : ''} onClick={() => setActiveTab('history')}>History</button>
-            </div>
-
-            <div className={styles.tabContent}>
-              {activeTab === 'details' && (
-                <div className={styles.detailsTab}>
-                  <div className={styles.statusControl}>
-                    <label>Ticket Status</label>
-                    <div className={styles.statusButtons}>
-                      {Object.values(TICKET_STATUS).map(status => {
-                        const canChange = selectedComplaint.assignedTo === currentUser?.name || currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
-                        return (
-                          <button
-                            key={status.value}
-                            className={`${styles.statusBtn} ${selectedComplaint.ticketStatus === status.value ? styles.active : ''}`}
-                            style={{
-                              background: selectedComplaint.ticketStatus === status.value ? status.bg : '#f5f5f5',
-                              color: selectedComplaint.ticketStatus === status.value ? status.color : '#666'
-                            }}
-                            onClick={() => canChange && updateStatus(status.value)}
-                            disabled={!canChange}
-                          >
-                            {status.label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {selectedComplaint.assignedTo !== currentUser?.name && currentUser?.role !== 'admin' && currentUser?.role !== 'super_admin' && (
-                      <span className={styles.permissionNote}>Only {selectedComplaint.assignedTo} can change status</span>
-                    )}
-                  </div>
-
-                  <div className={styles.detailsGrid}>
-                    <div className={styles.detailItem}><label>Route</label><span>{selectedComplaint.routeName}</span></div>
-                    <div className={styles.detailItem}><label>Company</label><span>{selectedComplaint.company || '-'}</span></div>
-                    <div className={styles.detailItem}><label>Captain</label><span>{selectedComplaint.captainName || '-'}</span></div>
-                    <div className={styles.detailItem}><label>Contact</label><span>{selectedComplaint.captainContact || '-'}</span></div>
-                    <div className={styles.detailItem}><label>Category</label><span>{selectedComplaint.issueCategoryName}</span></div>
-                    <div className={styles.detailItem}><label>Sub Category</label><span>{selectedComplaint.issueSubCategoryName || '-'}</span></div>
-                    <div className={styles.detailItem}><label>Department</label><span>{selectedComplaint.assignedDept}</span></div>
-                    <div className={styles.detailItem}><label>Assigned To</label><span className={styles.assignedHighlight}>{selectedComplaint.assignedTo}</span></div>
-                    <div className={styles.detailItem}>
-                      <label>Source</label>
-                      <span className={`${styles.sourceBadge} ${styles[selectedComplaint.complaintBy]}`}>
-                        {COMPLAINT_BY_OPTIONS.find(o => o.value === selectedComplaint.complaintBy)?.label}
-                      </span>
-                    </div>
-                    <div className={styles.detailItem}>
-                      <label>Priority</label>
-                      <span className={`${styles.priority} ${styles[selectedComplaint.priority]}`}>{selectedComplaint.priority?.toUpperCase()}</span>
-                    </div>
-                  </div>
-
-                  <div className={styles.issueBox}>
-                    <label>Issue Details</label>
-                    <p>{selectedComplaint.issueDetails}</p>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'comments' && (
-                <div className={styles.commentsTab}>
-                  <div className={styles.commentsList}>
-                    {(selectedComplaint.comments || []).length === 0 ? (
-                      <p className={styles.noComments}>No comments yet. Be the first to comment!</p>
-                    ) : (
-                      selectedComplaint.comments.map(comment => (
-                        <div key={comment.id} className={styles.commentItem}>
-                          <div className={styles.commentHeader}>
-                            <span className={styles.commentAuthor}>{comment.by}</span>
-                            <span className={styles.commentTime}>{formatDateDDMMYYYY(comment.timestamp)} {new Date(comment.timestamp).toLocaleTimeString()}</span>
-                          </div>
-                          <p className={styles.commentText}>{comment.text}</p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  <div className={styles.commentInput}>
-                    <textarea placeholder="Add a comment..." value={newComment} onChange={(e) => setNewComment(e.target.value)} rows="3" />
-                    <button className={styles.sendBtn} onClick={addComment} disabled={!newComment.trim()}>
-                      <Send size={18} /> Send
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'history' && (
-                <div className={styles.historyTab}>
-                  <div className={styles.timeline}>
-                    {(selectedComplaint.activityLog || []).map((activity, index) => (
-                      <div key={activity.id || index} className={styles.timelineItem}>
-                        <div className={styles.timelineDot} />
-                        <div className={styles.timelineContent}>
-                          <p>{activity.text}</p>
-                          <span>{formatDateDDMMYYYY(activity.timestamp)} {new Date(activity.timestamp).toLocaleTimeString()}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
