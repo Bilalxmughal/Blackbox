@@ -54,12 +54,26 @@ function ComplaintBoard() {
     status: 'all', company: 'all', dateFrom: '', dateTo: ''
   })
  
+  // ✅ Form State — complaintType + cascading fields added
   const [formData, setFormData] = useState({
-    routeName: '', accountName: '', vendorName: '', vendorContact: '',
-    busNumber: '', captainName: '', captainContact: '', company: '',
-    assignedDept: '', assignedTo: '', assignedToName: '',
-    issueCategory: '', issueCategoryName: '', issueSubCategory: '',
-    issueSubCategoryName: '', issueDetails: '', complaintBy: 'client', priority: 'medium'
+    complaintType: '',       // 'new' | 'record'
+    routeName: '',           // record flow
+    company: '',             // new flow
+    vendorName: '',
+    captainName: '',
+    captainContact: '',
+    vendorContact: '',
+    busNumber: '',
+    assignedDept: '',
+    assignedTo: '',
+    assignedToName: '',
+    issueCategory: '',
+    issueCategoryName: '',
+    issueSubCategory: '',
+    issueSubCategoryName: '',
+    issueDetails: '',
+    complaintBy: 'client',
+    priority: 'medium'
   })
  
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -81,26 +95,60 @@ function ComplaintBoard() {
     const interval = setInterval(loadData, 30000)
     return () => clearInterval(interval)
   }, [])
- 
+
+  // ✅ RECORD flow: Route → auto-fill everything
   useEffect(() => {
-    if (!formData.routeName || !opsData.length) return
-    const routeData = opsData.find(item =>
+    if (!formData.routeName || formData.complaintType !== 'record' || !opsData.length) return
+    const row = opsData.find(item =>
       item['Route Name']?.toString().trim() === formData.routeName.toString().trim()
     )
-    if (routeData) {
+    if (row) {
       setFormData(prev => ({
         ...prev,
-        accountName: routeData['Vendor Name'] || routeData['Captain Name'] || '',
-        vendorName: routeData['Vendor Name'] || '',
-        vendorContact: routeData['Vendor Number'] || '',
-        busNumber: routeData['Bus Number'] || '',
-        captainName: routeData['Captain Name'] || '',
-        captainContact: routeData['Captain Personal Mobile'] || '',
-        company: routeData['Company'] || ''
+        company: row['Company'] || '',
+        vendorName: row['Vendor Name'] || '',
+        vendorContact: row['Vendor Number'] || '',
+        busNumber: row['Bus Number'] || '',
+        captainName: row['Captain Name'] || '',
+        captainContact: row['Captain Personal Mobile'] || ''
       }))
     }
-  }, [formData.routeName, opsData])
- 
+  }, [formData.routeName, opsData, formData.complaintType])
+
+  // ✅ NEW flow: Captain selected → auto-fill contact + bus
+  useEffect(() => {
+    if (!formData.captainName || formData.complaintType !== 'new' || !formData.vendorName) return
+    const row = opsData.find(r =>
+      r['Captain Name'] === formData.captainName &&
+      r['Vendor Name'] === formData.vendorName
+    )
+    if (row) {
+      setFormData(prev => ({
+        ...prev,
+        captainContact: row['Captain Personal Mobile'] || '',
+        busNumber: row['Bus Number'] || '',
+        vendorContact: row['Vendor Number'] || ''
+      }))
+    }
+  }, [formData.captainName, formData.vendorName, opsData, formData.complaintType])
+
+  // ✅ Cascading options for NEW flow
+  const companyOptions = useMemo(() =>
+    [...new Set(opsData.map(r => r['Company']).filter(Boolean))].sort()
+  , [opsData])
+
+  const vendorOptions = useMemo(() =>
+    formData.company
+      ? [...new Set(opsData.filter(r => r['Company'] === formData.company).map(r => r['Vendor Name']).filter(Boolean))].sort()
+      : []
+  , [formData.company, opsData])
+
+  const captainOptions = useMemo(() =>
+    formData.vendorName
+      ? [...new Set(opsData.filter(r => r['Vendor Name'] === formData.vendorName).map(r => r['Captain Name']).filter(Boolean))].sort()
+      : []
+  , [formData.vendorName, opsData])
+
   const availableUsers = useMemo(() => {
     if (!formData.assignedDept) return []
     return users.filter(u => u.department === formData.assignedDept && u.status === 'active')
@@ -118,7 +166,6 @@ function ComplaintBoard() {
     return { companies, deptNames, userNames }
   }, [opsData, departments, complaints])
  
-  // ✅ SEARCH IN COMMENTS bhi add kiya
   const filteredComplaints = useMemo(() => {
     return complaints.filter(c => {
       const search = filters.search.toLowerCase()
@@ -127,7 +174,7 @@ function ComplaintBoard() {
         c.routeName?.toLowerCase().includes(search) ||
         c.captainName?.toLowerCase().includes(search) ||
         c.issueDetails?.toLowerCase().includes(search) ||
-        c.comments?.some(cm => cm.text?.toLowerCase().includes(search)) // ✅ COMMENT SEARCH
+        c.comments?.some(cm => cm.text?.toLowerCase().includes(search))
       const matchesDept = filters.department === 'all' || c.assignedDept === filters.department
       const matchesUser = filters.assignedTo === 'all' || c.assignedTo === filters.assignedTo
       const matchesStatus = filters.status === 'all' || c.ticketStatus === filters.status
@@ -157,12 +204,10 @@ function ComplaintBoard() {
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
   }
- 
   const toggleSelectAll = () => {
     if (selectedIds.length === filteredComplaints.length) setSelectedIds([])
     else setSelectedIds(filteredComplaints.map(c => c.id))
   }
- 
   const clearSelection = () => {
     setSelectedIds([])
     setShowBulkReassign(false)
@@ -176,17 +221,12 @@ function ComplaintBoard() {
     const updated = complaints.map(c => {
       if (!selectedIds.includes(c.id)) return c
       return {
-        ...c,
-        ticketStatus: 'Closed',
-        complaintStatus: 'Resolved',
-        resolvedPercent: 100,
-        resolvedDate: new Date().toISOString(),
+        ...c, ticketStatus: 'Closed', complaintStatus: 'Resolved',
+        resolvedPercent: 100, resolvedDate: new Date().toISOString(),
         activityLog: [...(c.activityLog || []), {
-          id: `act-${Date.now()}`,
-          type: 'status_change',
+          id: `act-${Date.now()}`, type: 'status_change',
           text: `Ticket bulk-closed by Admin ${currentUser?.name}`,
-          by: currentUser?.name,
-          timestamp: new Date().toISOString()
+          by: currentUser?.name, timestamp: new Date().toISOString()
         }]
       }
     })
@@ -196,8 +236,7 @@ function ComplaintBoard() {
  
   const handleBulkReassign = () => {
     if (!bulkReassignData.dept || !bulkReassignData.userId) {
-      alert('Please select department and user')
-      return
+      alert('Please select department and user'); return
     }
     const updated = complaints.map(c => {
       if (!selectedIds.includes(c.id)) return c
@@ -208,23 +247,17 @@ function ComplaintBoard() {
         assignedToId: bulkReassignData.userId,
         assignedToName: bulkReassignData.userName,
         reassignHistory: [...(c.reassignHistory || []), {
-          id: `reas-${Date.now()}`,
-          fromUser: c.assignedTo,
-          fromUserId: c.assignedToId,
-          toUser: bulkReassignData.userName,
-          toUserId: bulkReassignData.userId,
+          id: `reas-${Date.now()}`, fromUser: c.assignedTo, fromUserId: c.assignedToId,
+          toUser: bulkReassignData.userName, toUserId: bulkReassignData.userId,
           toDept: bulkReassignData.dept,
           reason: `Bulk reassigned by Admin ${currentUser?.name}`,
-          reassignedBy: currentUser?.name,
-          reassignedById: currentUser?.id,
+          reassignedBy: currentUser?.name, reassignedById: currentUser?.id,
           timestamp: new Date().toISOString()
         }],
         activityLog: [...(c.activityLog || []), {
-          id: `act-${Date.now()}`,
-          type: 'reassign',
+          id: `act-${Date.now()}`, type: 'reassign',
           text: `Bulk reassigned to "${bulkReassignData.userName}" (${bulkReassignData.dept}) by Admin ${currentUser?.name}`,
-          by: currentUser?.name,
-          timestamp: new Date().toISOString()
+          by: currentUser?.name, timestamp: new Date().toISOString()
         }]
       }
     })
@@ -250,9 +283,9 @@ function ComplaintBoard() {
         submittedAt: new Date().toISOString(),
         submittedBy: currentUser?.name || 'System',
         submittedById: currentUser?.id,
+        complaintType: formData.complaintType,
         routeName: formData.routeName,
         company: formData.company,
-        accountName: formData.accountName,
         vendorName: formData.vendorName,
         vendorContact: formData.vendorContact,
         busNumber: formData.busNumber,
@@ -274,15 +307,12 @@ function ComplaintBoard() {
         resolvedPercent: 0,
         comments: [],
         activityLog: [{
-          id: `act-${Date.now()}`,
-          type: 'created',
+          id: `act-${Date.now()}`, type: 'created',
           text: `Ticket created by ${currentUser?.name} and assigned to ${formData.assignedToName}`,
-          by: currentUser?.name,
-          timestamp: new Date().toISOString()
+          by: currentUser?.name, timestamp: new Date().toISOString()
         }]
       }
-      const updated = [newComplaint, ...complaints]
-      saveComplaints(updated)
+      saveComplaints([newComplaint, ...complaints])
       resetForm()
       setShowAddModal(false)
     } finally {
@@ -292,19 +322,31 @@ function ComplaintBoard() {
  
   const resetForm = () => {
     setFormData({
-      routeName: '', accountName: '', vendorName: '', vendorContact: '',
-      busNumber: '', captainName: '', captainContact: '', company: '',
+      complaintType: '', routeName: '', company: '', vendorName: '',
+      captainName: '', captainContact: '', vendorContact: '', busNumber: '',
       assignedDept: '', assignedTo: '', assignedToName: '',
       issueCategory: '', issueCategoryName: '', issueSubCategory: '',
       issueSubCategoryName: '', issueDetails: '', complaintBy: 'client', priority: 'medium'
     })
   }
+
+  // ✅ Complaint type change → reset route/company fields
+  const handleComplaintTypeChange = (type) => {
+    setFormData(prev => ({
+      ...prev,
+      complaintType: type,
+      routeName: '', company: '', vendorName: '', captainName: '',
+      captainContact: '', vendorContact: '', busNumber: ''
+    }))
+  }
  
   const openDetail = (complaint) => navigate(`/complaints/${complaint.id}`)
-  const uniqueRoutes = useMemo(() => {
-    return [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))].sort()
-  }, [opsData])
+  const uniqueRoutes = useMemo(() =>
+    [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))].sort()
+  , [opsData])
   const allFilteredSelected = filteredComplaints.length > 0 && filteredComplaints.every(c => selectedIds.includes(c.id))
+  const isNew = formData.complaintType === 'new'
+  const isRecord = formData.complaintType === 'record'
  
   return (
     <div className={styles.container}>
@@ -343,12 +385,8 @@ function ComplaintBoard() {
       <div className={styles.filtersBar}>
         <div className={styles.searchBox}>
           <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search tickets, comments..."
-            value={filters.search}
-            onChange={(e) => setFilters({...filters, search: e.target.value})}
-          />
+          <input type="text" placeholder="Search tickets, comments..." value={filters.search}
+            onChange={(e) => setFilters({...filters, search: e.target.value})} />
         </div>
         <div className={styles.filterGroup}>
           <select value={filters.department} onChange={(e) => setFilters({...filters, department: e.target.value})}>
@@ -416,7 +454,7 @@ function ComplaintBoard() {
                   )}
                   <td className={styles.dateCell}>{formatDateDDMMYYYY(complaint.date)}</td>
                   <td className={styles.ticketCell}><span className={styles.ticketNo}>{complaint.ticketNo}</span></td>
-                  <td>{complaint.routeName || '-'}</td>
+                  <td>{complaint.routeName || complaint.vendorName || '-'}</td>
                   <td><span className={styles.categoryBadge}>{complaint.issueCategoryName || complaint.issueCategory}</span></td>
                   <td>{complaint.issueSubCategoryName || '-'}</td>
                   <td>{complaint.assignedDept}</td>
@@ -441,8 +479,8 @@ function ComplaintBoard() {
                   </td>
                   <td>
                     <div className={styles.actionButtons}>
-                      <button className={styles.viewBtn} onClick={() => openDetail(complaint)} title="View Details"><Eye size={16} /></button>
-                      <button className={styles.commentBtn} onClick={() => openDetail(complaint)} title="Comments">
+                      <button className={styles.viewBtn} onClick={() => openDetail(complaint)}><Eye size={16} /></button>
+                      <button className={styles.commentBtn} onClick={() => openDetail(complaint)}>
                         <MessageSquare size={16} />
                         {complaint.comments?.length > 0 && <span className={styles.commentCount}>{complaint.comments.length}</span>}
                       </button>
@@ -495,106 +533,249 @@ function ComplaintBoard() {
         </div>
       )}
  
+      {/* ✅ ADD COMPLAINT MODAL */}
       {showAddModal && (
-        <div className={styles.modalOverlay} onClick={(e) => { if(e.target === e.currentTarget) setShowAddModal(false) }}>
+        <div className={styles.modalOverlay} onClick={(e) => { if(e.target === e.currentTarget) { resetForm(); setShowAddModal(false) } }}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2><Plus size={20} /> Add New Complaint</h2>
-              <button className={styles.closeBtn} onClick={() => setShowAddModal(false)}><X size={20} /></button>
+              <button className={styles.closeBtn} onClick={() => { resetForm(); setShowAddModal(false) }}><X size={20} /></button>
             </div>
+
             <form onSubmit={handleSubmit} className={styles.form}>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Route Name *</label>
-                  <select value={formData.routeName} onChange={(e) => setFormData({...formData, routeName: e.target.value})} required>
-                    <option value="">Select Route</option>
-                    {uniqueRoutes.map(route => <option key={route} value={route}>{route}</option>)}
-                  </select>
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Company</label>
-                  <input type="text" value={formData.company} readOnly className={styles.readOnly} />
-                </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}><label>Captain Name</label><input type="text" value={formData.captainName} readOnly className={styles.readOnly} /></div>
-                <div className={styles.formGroup}><label>Captain Contact</label><input type="text" value={formData.captainContact} readOnly className={styles.readOnly} /></div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}><label>Vendor Name</label><input type="text" value={formData.vendorName} readOnly className={styles.readOnly} /></div>
-                <div className={styles.formGroup}><label>Vendor Contact</label><input type="text" value={formData.vendorContact} readOnly className={styles.readOnly} /></div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}><label>Account Name</label><input type="text" value={formData.accountName} readOnly className={styles.readOnly} /></div>
-                <div className={styles.formGroup}><label>Bus Number</label><input type="text" value={formData.busNumber} readOnly className={styles.readOnly} /></div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Complaint By *</label>
-                  <select value={formData.complaintBy} onChange={(e) => setFormData({...formData, complaintBy: e.target.value})} required>
-                    {COMPLAINT_BY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                  </select>
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Priority</label>
-                  <select value={formData.priority} onChange={(e) => setFormData({...formData, priority: e.target.value})}>
-                    <option value="low">Low</option><option value="medium">Medium</option>
-                    <option value="high">High</option><option value="urgent">Urgent</option>
-                  </select>
+
+              {/* ── STEP 1: Complaint Type ── */}
+              <div className={styles.formSection}>
+                <div className={styles.formSectionLabel}>Complaint Type *</div>
+                <div className={styles.typeToggle}>
+                  <button
+                    type="button"
+                    className={`${styles.typeBtn} ${isNew ? styles.typeBtnNew : ''}`}
+                    onClick={() => handleComplaintTypeChange('new')}
+                  >
+                    New
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.typeBtn} ${isRecord ? styles.typeBtnRecord : ''}`}
+                    onClick={() => handleComplaintTypeChange('record')}
+                  >
+                    Recorded
+                  </button>
                 </div>
               </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Issue Category *</label>
-                  <select value={formData.issueCategory} onChange={(e) => {
-                    const cat = categories.find(c => c.id === e.target.value)
-                    setFormData({...formData, issueCategory: e.target.value, issueCategoryName: cat?.name, issueSubCategory: '', issueSubCategoryName: ''})
-                  }} required>
-                    <option value="">Select Category</option>
-                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                  </select>
+
+              {/* ── No type selected placeholder ── */}
+              {!formData.complaintType && (
+                <div className={styles.typePlaceholder}>
+                  Select complaint type to continue ↑
                 </div>
-                <div className={styles.formGroup}>
-                  <label>Sub Category *</label>
-                  <select value={formData.issueSubCategory} onChange={(e) => {
-                    const subCat = categories.find(c => c.id === formData.issueCategory)?.subCategories?.find(s => s.id === e.target.value)
-                    setFormData({...formData, issueSubCategory: e.target.value, issueSubCategoryName: subCat?.name})
-                  }} required disabled={!formData.issueCategory}>
-                    <option value="">Select Sub-Category</option>
-                    {categories.find(c => c.id === formData.issueCategory)?.subCategories?.map(sub => (
-                      <option key={sub.id} value={sub.id}>{sub.name}</option>
-                    ))}
-                  </select>
+              )}
+
+              {/* ── RECORD flow: Route ── */}
+              {isRecord && (
+                <div className={styles.formSection}>
+                  <div className={styles.formSectionLabel}>Route Information</div>
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label>Route Name *</label>
+                      <select value={formData.routeName} onChange={(e) => setFormData({...formData, routeName: e.target.value})} required>
+                        <option value="">Select Route</option>
+                        {uniqueRoutes.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Company</label>
+                      <input type="text" value={formData.company} readOnly className={styles.readOnly} placeholder="Auto-filled" />
+                    </div>
+                  </div>
+                  {formData.routeName && (
+                    <div className={styles.formRow3}>
+                      <div className={styles.formGroup}>
+                        <label>Vendor Name</label>
+                        <input type="text" value={formData.vendorName} readOnly className={styles.readOnly} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Vendor Contact</label>
+                        <input type="text" value={formData.vendorContact} readOnly className={styles.readOnly} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Bus Number</label>
+                        <input type="text" value={formData.busNumber} readOnly className={styles.readOnly} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Captain Name</label>
+                        <input type="text" value={formData.captainName} readOnly className={styles.readOnly} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Captain Contact</label>
+                        <input type="text" value={formData.captainContact} readOnly className={styles.readOnly} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Assign Department *</label>
-                  <select value={formData.assignedDept} onChange={(e) => setFormData({...formData, assignedDept: e.target.value, assignedTo: '', assignedToName: ''})} required>
-                    <option value="">Select Department</option>
-                    {departments.map(dept => <option key={dept.id} value={dept.name}>{dept.name}</option>)}
-                  </select>
+              )}
+
+              {/* ── NEW flow: Company → Vendor → Captain ── */}
+              {isNew && (
+                <div className={styles.formSection}>
+                  <div className={styles.formSectionLabel}>Route Information</div>
+                  <div className={styles.formRow3}>
+                    {/* Company */}
+                    <div className={styles.formGroup}>
+                      <label>Company *</label>
+                      <select
+                        value={formData.company}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev, company: e.target.value,
+                          vendorName: '', captainName: '', captainContact: '', busNumber: '', vendorContact: ''
+                        }))}
+                        required
+                      >
+                        <option value="">Select Company</option>
+                        {companyOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Vendor */}
+                    <div className={styles.formGroup}>
+                      <label>Vendor Name *</label>
+                      <select
+                        value={formData.vendorName}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev, vendorName: e.target.value,
+                          captainName: '', captainContact: '', busNumber: '', vendorContact: ''
+                        }))}
+                        disabled={!formData.company}
+                        required
+                      >
+                        <option value="">{formData.company ? 'Select Vendor' : 'Select Company first'}</option>
+                        {vendorOptions.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Captain */}
+                    <div className={styles.formGroup}>
+                      <label>Captain / Driver *</label>
+                      <select
+                        value={formData.captainName}
+                        onChange={(e) => setFormData(prev => ({ ...prev, captainName: e.target.value }))}
+                        disabled={!formData.vendorName}
+                        required
+                      >
+                        <option value="">{formData.vendorName ? 'Select Captain' : 'Select Vendor first'}</option>
+                        {captainOptions.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Auto-filled row */}
+                  {formData.captainName && (
+                    <div className={styles.formRow3} style={{ marginTop: 14 }}>
+                      <div className={styles.formGroup}>
+                        <label>Captain Contact</label>
+                        <input type="text" value={formData.captainContact} readOnly className={styles.readOnly} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Vendor Contact</label>
+                        <input type="text" value={formData.vendorContact} readOnly className={styles.readOnly} />
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Bus Number</label>
+                        <input type="text" value={formData.busNumber} readOnly className={styles.readOnly} />
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className={styles.formGroup}>
-                  <label>Assign To *</label>
-                  <select value={formData.assignedTo} onChange={(e) => {
-                    const selectedUser = availableUsers.find(u => u.id === e.target.value)
-                    setFormData({...formData, assignedTo: e.target.value, assignedToName: selectedUser?.name})
-                  }} required disabled={!formData.assignedDept}>
-                    <option value="">Select User</option>
-                    {availableUsers.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
-                  </select>
-                  {formData.assignedDept && availableUsers.length === 0 && <small className={styles.noUsers}>No active users in this department</small>}
-                </div>
-              </div>
-              <div className={styles.formGroupFull}>
-                <label>Issue Details *</label>
-                <textarea rows="4" value={formData.issueDetails} onChange={(e) => setFormData({...formData, issueDetails: e.target.value})} placeholder="Describe the issue in detail..." required />
-              </div>
-              <div className={styles.formActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>{isSubmitting ? 'Creating...' : 'Create Ticket'}</button>
-              </div>
+              )}
+
+              {/* ── Issue + Assignment (show when type selected) ── */}
+              {formData.complaintType && (
+                <>
+                  <div className={styles.formSection}>
+                    <div className={styles.formSectionLabel}>Issue Information</div>
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>Complaint By *</label>
+                        <select value={formData.complaintBy} onChange={(e) => setFormData({...formData, complaintBy: e.target.value})} required>
+                          {COMPLAINT_BY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Priority</label>
+                        <select value={formData.priority} onChange={(e) => setFormData({...formData, priority: e.target.value})}>
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                          <option value="urgent">Urgent</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className={styles.formRow} style={{ marginTop: 14 }}>
+                      <div className={styles.formGroup}>
+                        <label>Issue Category *</label>
+                        <select value={formData.issueCategory} onChange={(e) => {
+                          const cat = categories.find(c => c.id === e.target.value)
+                          setFormData({...formData, issueCategory: e.target.value, issueCategoryName: cat?.name, issueSubCategory: '', issueSubCategoryName: ''})
+                        }} required>
+                          <option value="">Select Category</option>
+                          {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                        </select>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Sub Category *</label>
+                        <select value={formData.issueSubCategory} onChange={(e) => {
+                          const subCat = categories.find(c => c.id === formData.issueCategory)?.subCategories?.find(s => s.id === e.target.value)
+                          setFormData({...formData, issueSubCategory: e.target.value, issueSubCategoryName: subCat?.name})
+                        }} required disabled={!formData.issueCategory}>
+                          <option value="">Select Sub-Category</option>
+                          {categories.find(c => c.id === formData.issueCategory)?.subCategories?.map(sub => (
+                            <option key={sub.id} value={sub.id}>{sub.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.formSection}>
+                    <div className={styles.formSectionLabel}>Assignment</div>
+                    <div className={styles.formRow}>
+                      <div className={styles.formGroup}>
+                        <label>Assign Department *</label>
+                        <select value={formData.assignedDept} onChange={(e) => setFormData({...formData, assignedDept: e.target.value, assignedTo: '', assignedToName: ''})} required>
+                          <option value="">Select Department</option>
+                          {departments.map(dept => <option key={dept.id} value={dept.name}>{dept.name}</option>)}
+                        </select>
+                      </div>
+                      <div className={styles.formGroup}>
+                        <label>Assign To *</label>
+                        <select value={formData.assignedTo} onChange={(e) => {
+                          const selectedUser = availableUsers.find(u => u.id === e.target.value)
+                          setFormData({...formData, assignedTo: e.target.value, assignedToName: selectedUser?.name})
+                        }} required disabled={!formData.assignedDept}>
+                          <option value="">Select User</option>
+                          {availableUsers.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+                        </select>
+                        {formData.assignedDept && availableUsers.length === 0 && <small className={styles.noUsers}>No active users in this department</small>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className={styles.formGroupFull}>
+                    <label>Issue Details *</label>
+                    <textarea rows="4" value={formData.issueDetails}
+                      onChange={(e) => setFormData({...formData, issueDetails: e.target.value})}
+                      placeholder="Describe the issue in detail..." required />
+                  </div>
+
+                  <div className={styles.formActions}>
+                    <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setShowAddModal(false) }}>Cancel</button>
+                    <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                      {isSubmitting ? 'Creating...' : 'Create Ticket'}
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
           </div>
         </div>
