@@ -634,3 +634,179 @@
   .reassignForm { grid-template-columns: 1fr; }
   .reassignField.fullField { grid-column: 1; }
 }
+
+/* =============================================
+   MENTION + COMMENT SEARCH CSS
+   ComplaintDetail.module.css ke END mein paste karo
+   ============================================= */
+
+/* Comment Search */
+.commentSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.commentSearch input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #333;
+}
+
+.commentSearch input:focus {
+  outline: none;
+}
+
+.clearSearch {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #aaa;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.clearSearch:hover {
+  color: #ff6b6b;
+  background: #fff0f0;
+}
+
+/* Comment Input Wrapper — dropdown ke liye relative */
+.commentInputWrapper {
+  position: relative;
+}
+
+.commentInputWrapper textarea {
+  width: 100%;
+  padding: 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 90px;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.commentInputWrapper textarea:focus {
+  outline: none;
+  border-color: #00d4ff;
+}
+
+/* Comment Actions row */
+.commentActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.commentHint {
+  font-size: 12px;
+  color: #aaa;
+}
+
+/* ✅ @MENTION DROPDOWN */
+.mentionDropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid #00d4ff;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  overflow: hidden;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mentionDropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #00d4ff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #f0fbff;
+  border-bottom: 1px solid #e0f7ff;
+}
+
+.mentionOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.mentionOption:hover {
+  background: #f0fbff;
+}
+
+.mentionAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff, #00b8d9);
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mentionName {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.mentionDept {
+  display: block;
+  font-size: 11px;
+  color: #888;
+}
+
+.mentionEmail {
+  margin-left: auto;
+  font-size: 11px;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+/* ✅ @mention highlight in comment text */
+.mentionTag {
+  display: inline-block;
+  background: #e3f6ff;
+  color: #00b8d9;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 13px;
+}

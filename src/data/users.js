@@ -81,7 +81,7 @@ export const defaultUsers = [
   {
     id: 'user-3',
     name: 'Ops User',
-    email: 'ops@buscaro.com',
+    email: 'bilalxmughal@gmail.com',
     phone: '+92-300-1112223',
     password: 'admin123',
     department: 'Operations',

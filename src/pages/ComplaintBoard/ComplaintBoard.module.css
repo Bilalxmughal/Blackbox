@@ -950,3 +950,194 @@
     width: 100%;
   }
 }
+
+
+/* ========================================
+   BULK ACTIONS - ComplaintBoard.module.css
+   ke bilkul end mein paste karo
+   ======================================== */
+
+/* Checkbox column */
+.checkboxCol {
+  width: 44px;
+  text-align: center;
+  padding: 8px !important;
+}
+
+.checkboxBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.checkboxBtn:hover {
+  background: #f0f0f0;
+}
+
+/* Selected row highlight */
+.selectedRow {
+  background: #e3f6ff !important;
+  border-left: 3px solid #00d4ff;
+}
+
+/* ✅ BULK ACTION BAR - bottom pe fixed */
+.bulkBar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a2e;
+  color: white;
+  border-radius: 16px;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  z-index: 999;
+  flex-wrap: wrap;
+  min-width: 500px;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.bulkLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.bulkCount {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: white;
+}
+
+.bulkClearBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(255,255,255,0.1);
+  color: #ccc;
+  border-radius: 8px;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.bulkClearBtn:hover {
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+
+.bulkActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bulkCloseBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.bulkCloseBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.bulkReassignBtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #7b1fa2, #9c27b0);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.bulkReassignBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(123, 31, 162, 0.4);
+}
+
+/* Bulk Reassign Dropdown */
+.bulkReassignDropdown {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  flex-wrap: wrap;
+}
+
+.bulkReassignDropdown select {
+  flex: 1;
+  min-width: 160px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.1);
+  color: white;
+  font-size: 14px;
+}
+
+.bulkReassignDropdown select option {
+  background: #1a1a2e;
+  color: white;
+}
+
+.bulkReassignDropdown select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bulkReassignConfirm {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #00d4ff, #00b8d9);
+  color: white;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.bulkReassignConfirm:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.4);
+}
+
+.bulkReassignConfirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

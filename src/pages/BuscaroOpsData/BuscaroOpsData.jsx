@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Papa from 'papaparse'
-import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download } from 'lucide-react'
+import { Upload, RefreshCw, ChevronDown, ChevronUp, Search, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import ExcelUploader from '../../components/ExcelUploader/ExcelUploader'
 import styles from './BuscaroOpsData.module.css'
 
@@ -11,11 +11,13 @@ function BuscaroOpsData({ isAdmin }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [lastUpdated, setLastUpdated] = useState(null)
 
+  // Sort State
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: null })
+
   // Google Sheet CSV URL
   const sheetCsvUrl = 
     'https://docs.google.com/spreadsheets/d/1mKGwya4kg1Co_hUCPy3MQcpiQBzcMVlhAn3gzqaMaPo/gviz/tq?tqx=out:csv&sheet=Sheet1'
 
-  // Columns to display in custom sequence
   const selectedColumnsSequence = [
     'Captain Name',
     'Captain Personal Mobile',
@@ -45,7 +47,6 @@ function BuscaroOpsData({ isAdmin }) {
       try {
         const res = await fetch(sheetCsvUrl)
         const csvText = await res.text()
-        
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
@@ -61,7 +62,6 @@ function BuscaroOpsData({ isAdmin }) {
         if (saved) setOpsData(JSON.parse(saved))
       }
     }
-
     fetchSheetData()
   }, [])
 
@@ -73,26 +73,63 @@ function BuscaroOpsData({ isAdmin }) {
   }
 
   const toggleRow = (id) => {
-    setExpandedRows(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }))
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }))
   }
 
-  const filteredData = opsData.filter(row =>
-    Object.values(row).some(val =>
-      String(val).toLowerCase().includes(searchTerm.toLowerCase())
+  // Sort handler - teen states cycle karta hai: null → asc → desc → null
+  const handleSort = (key) => {
+    setSortConfig(prev => {
+      if (prev.key !== key) return { key, direction: 'asc' }
+      if (prev.direction === 'asc') return { key, direction: 'desc' }
+      return { key: null, direction: null }
+    })
+  }
+
+  // Sort icon return karna
+  const getSortIcon = (key) => {
+    if (sortConfig.key !== key) return <ArrowUpDown size={14} className={styles.sortIcon} />
+    if (sortConfig.direction === 'asc') return <ArrowUp size={14} className={styles.sortIconActive} />
+    return <ArrowDown size={14} className={styles.sortIconActive} />
+  }
+
+  // Filter + Sort dono apply karna
+  const filteredData = useMemo(() => {
+    let data = opsData.filter(row =>
+      Object.values(row).some(val =>
+        String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      )
     )
-  )
+
+    if (sortConfig.key && sortConfig.direction) {
+      data = [...data].sort((a, b) => {
+        const aVal = a[sortConfig.key] || ''
+        const bVal = b[sortConfig.key] || ''
+
+        // Number check
+        const aNum = parseFloat(aVal)
+        const bNum = parseFloat(bVal)
+        const isNumeric = !isNaN(aNum) && !isNaN(bNum)
+
+        if (isNumeric) {
+          return sortConfig.direction === 'asc' ? aNum - bNum : bNum - aNum
+        }
+
+        // String sort
+        const comparison = String(aVal).localeCompare(String(bVal))
+        return sortConfig.direction === 'asc' ? comparison : -comparison
+      })
+    }
+
+    return data
+  }, [opsData, searchTerm, sortConfig])
 
   const exportToCSV = () => {
     if (!opsData.length) return
     const headers = selectedColumnsSequence.join(',')
-    const rows = opsData.map(row => 
+    const rows = opsData.map(row =>
       selectedColumnsSequence.map(col => row[col] || '-').join(',')
     )
     const csv = [headers, ...rows].join('\n')
-
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -104,10 +141,9 @@ function BuscaroOpsData({ isAdmin }) {
   const uniqueCompanies = [...new Set(opsData.map(item => item.Company).filter(Boolean))]
   const uniqueRoutes = [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))]
 
-  // Main table columns
   const mainColumns = [
     { header: 'Captain Name', key: 'Captain Name' },
-    { header: 'Captain Personal Mobile', key: 'Captain Personal Mobile' },
+    { header: 'Captain Mobile', key: 'Captain Personal Mobile' },
     { header: 'Company', key: 'Company' },
     { header: 'Route Name', key: 'Route Name' },
     { header: 'Vendor Name', key: 'Vendor Name' },
@@ -119,7 +155,6 @@ function BuscaroOpsData({ isAdmin }) {
     { header: 'Margin', key: 'Margin' },
   ]
 
-  // Fields to show in expanded details
   const allFields = selectedColumnsSequence.filter(field => field in (opsData[0] || {}))
 
   return (
@@ -128,29 +163,16 @@ function BuscaroOpsData({ isAdmin }) {
         <div>
           <h1>Buscaro Ops Data</h1>
           {lastUpdated && (
-            <p style={{ fontSize: '12px', color: '#888' }}>
-              Last updated: {lastUpdated}
-            </p>
+            <p style={{ fontSize: '12px', color: '#888' }}>Last updated: {lastUpdated}</p>
           )}
         </div>
-
         {isAdmin && (
           <div className={styles.actions}>
-            <button
-              className={styles.updateBtn}
-              onClick={() => setShowUpload(!showUpload)}
-            >
-              <RefreshCw size={18} />
-              Update Data
+            <button className={styles.updateBtn} onClick={() => setShowUpload(!showUpload)}>
+              <RefreshCw size={18} /> Update Data
             </button>
-
-            <button
-              className={styles.exportBtn}
-              onClick={exportToCSV}
-              disabled={opsData.length === 0}
-            >
-              <Download size={18} />
-              Export
+            <button className={styles.exportBtn} onClick={exportToCSV} disabled={opsData.length === 0}>
+              <Download size={18} /> Export
             </button>
           </div>
         )}
@@ -175,6 +197,16 @@ function BuscaroOpsData({ isAdmin }) {
           <span className={styles.statValue}>{uniqueRoutes.length}</span>
           <span className={styles.statLabel}>Routes</span>
         </div>
+        {sortConfig.key && (
+          <div className={styles.stat}>
+            <span className={styles.sortActive}>
+              Sorted: {sortConfig.key} ({sortConfig.direction === 'asc' ? '↑ A-Z' : '↓ Z-A'})
+            </span>
+            <button className={styles.clearSort} onClick={() => setSortConfig({ key: null, direction: null })}>
+              Clear Sort
+            </button>
+          </div>
+        )}
       </div>
 
       <div className={styles.searchBox}>
@@ -193,7 +225,17 @@ function BuscaroOpsData({ isAdmin }) {
             <tr>
               <th>Show</th>
               {mainColumns.map(col => (
-                <th key={col.key}>{col.header}</th>
+                <th
+                  key={col.key}
+                  className={styles.sortableHeader}
+                  onClick={() => handleSort(col.key)}
+                  title={`Sort by ${col.header}`}
+                >
+                  <div className={styles.headerContent}>
+                    {col.header}
+                    {getSortIcon(col.key)}
+                  </div>
+                </th>
               ))}
             </tr>
           </thead>
@@ -202,19 +244,14 @@ function BuscaroOpsData({ isAdmin }) {
               <>
                 <tr key={index} className={styles.mainRow}>
                   <td>
-                    <button
-                      className={styles.expandBtn}
-                      onClick={() => toggleRow(index)}
-                    >
+                    <button className={styles.expandBtn} onClick={() => toggleRow(index)}>
                       {expandedRows[index] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                   </td>
-
                   {mainColumns.map(col => (
                     <td key={col.key}>{row[col.key] || '-'}</td>
                   ))}
                 </tr>
-
                 {expandedRows[index] && (
                   <tr className={styles.expandedRow}>
                     <td colSpan={mainColumns.length + 1}>
@@ -233,6 +270,12 @@ function BuscaroOpsData({ isAdmin }) {
             ))}
           </tbody>
         </table>
+
+        {filteredData.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
+            No records found
+          </div>
+        )}
       </div>
     </div>
   )

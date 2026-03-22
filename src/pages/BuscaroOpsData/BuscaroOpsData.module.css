@@ -215,3 +215,56 @@
   color: #1a1a2e;
   font-weight: 500;
 }
+
+
+/* === SORT STYLES - BuscaroOpsData.module.css ke end mein add karo === */
+
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.sortableHeader:hover {
+  background: #e8f4fd !important;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.sortIcon {
+  color: #bbb;
+  flex-shrink: 0;
+}
+
+.sortIconActive {
+  color: #00d4ff;
+  flex-shrink: 0;
+}
+
+.sortActive {
+  font-size: 12px;
+  color: #00d4ff;
+  font-weight: 600;
+}
+
+.clearSort {
+  font-size: 11px;
+  color: #ff6b6b;
+  background: none;
+  border: 1px solid #ff6b6b;
+  border-radius: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  margin-top: 4px;
+  display: block;
+}
+
+.clearSort:hover {
+  background: #ff6b6b;
+  color: white;
+}
