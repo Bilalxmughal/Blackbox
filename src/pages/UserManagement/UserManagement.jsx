@@ -60,8 +60,8 @@ function UserManagement() {
       setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
       setRequests(getPendingRequests())
 
-      // Step 2: Sync from Firebase — only add users that don't exist locally
-      // Never overwrite local users (passwords would be lost)
+      // Step 2: Sync from Firebase — only ADD new users, never overwrite local data
+      // This preserves passwords stored locally
       try {
         const res = await getAllUsers()
         if (res.success && res.data.length > 0) {
@@ -69,7 +69,7 @@ function UserManagement() {
           const localUsers = currentLocal ? JSON.parse(currentLocal) : []
           const localEmails = new Set(localUsers.map(u => u.email?.toLowerCase()))
 
-          // Only add users from Firebase that are not in localStorage
+          // Only bring in users that don't exist locally
           const newFromFirebase = res.data.filter(u => !localEmails.has(u.email?.toLowerCase()))
 
           if (newFromFirebase.length > 0) {
@@ -77,7 +77,6 @@ function UserManagement() {
             setUsers(merged)
             localStorage.setItem('users', JSON.stringify(merged))
           }
-          // If no new users, keep local data as-is (preserves passwords)
         }
       } catch (err) {
         console.error('Firebase sync failed:', err)
@@ -91,6 +90,24 @@ function UserManagement() {
   const saveUsers = (updated) => {
     setUsers(updated)
     localStorage.setItem('users', JSON.stringify(updated))
+  }
+
+  // ✅ Get the correct Firebase document ID for a user
+  // Users created in Firebase get a firebaseId stored alongside local id
+  const getFirebaseId = (user) => user.firebaseId || user.id
+
+  // ✅ Update currentUser in localStorage if the edited user is the logged-in user
+  // This prevents session mismatch / auto-logout
+  const syncCurrentUserSession = (updatedUser) => {
+    const session = localStorage.getItem('currentUser')
+    if (!session) return
+    try {
+      const sessionUser = JSON.parse(session)
+      if (sessionUser.id === updatedUser.id || sessionUser.email === updatedUser.email) {
+        const refreshed = { ...sessionUser, ...updatedUser }
+        localStorage.setItem('currentUser', JSON.stringify(refreshed))
+      }
+    } catch (e) {}
   }
 
   // Permission checks
@@ -140,7 +157,7 @@ function UserManagement() {
     setShowModal(true)
   }
 
-  // Open modal in Edit mode with selected user's data
+  // Open modal in Edit mode with selected user's data pre-filled
   const openEditModal = (user) => {
     setSelectedUser(user)
     setModalMode('edit')
@@ -170,7 +187,7 @@ function UserManagement() {
     setSelectedUser(null)
   }
 
-  // Handle form submit for both Add and Edit modes
+  // Handle Add and Edit form submissions
   const handleSubmit = () => {
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill all required fields')
@@ -184,7 +201,7 @@ function UserManagement() {
         return
       }
 
-      // OPS users must send approval request instead of directly creating
+      // OPS users must send an approval request instead of creating directly
       if (currentUser?.role === 'ops') {
         savePendingRequest({
           type: 'add_user',
@@ -197,7 +214,7 @@ function UserManagement() {
         return
       }
 
-      // Save to localStorage immediately (instant UI update)
+      // Save user locally first for instant UI response
       const newUser = {
         id: `user-${Date.now()}`,
         name: formData.name,
@@ -214,12 +231,15 @@ function UserManagement() {
       const updatedUsers = [...users, newUser]
       saveUsers(updatedUsers)
 
-      // Sync to Firebase in background — update local ID with Firebase ID after save
+      // ✅ Sync to Firebase and store the returned Firebase ID as firebaseId
+      // This is critical — future updates/deletes use firebaseId to find the document
       setTimeout(() => {
         createUserInFirebase(newUser).then(result => {
           if (result.success) {
             const finalUsers = updatedUsers.map(u =>
-              u.id === newUser.id ? { ...u, id: result.id } : u
+              u.id === newUser.id
+                ? { ...u, firebaseId: result.id }  // ← store Firebase doc ID separately
+                : u
             )
             saveUsers(finalUsers)
           }
@@ -236,7 +256,7 @@ function UserManagement() {
         return
       }
 
-      // OPS users must send approval request for edits
+      // OPS users must send an approval request for edits
       if (currentUser?.role === 'ops') {
         savePendingRequest({
           type: 'edit_user',
@@ -250,27 +270,32 @@ function UserManagement() {
         return
       }
 
-      // Update localStorage immediately
+      // Build the updated user object
+      const updatedFields = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        department: formData.department,
+        role: formData.role,
+        status: formData.status,
+        // Only update password if reset checkbox is checked and new password is entered
+        ...(formData.resetPassword && formData.password && { password: formData.password })
+      }
+
+      // Apply updates to localStorage immediately
       const updated = users.map(u =>
-        u.id === selectedUser.id
-          ? {
-              ...u,
-              name: formData.name,
-              email: formData.email,
-              phone: formData.phone,
-              department: formData.department,
-              role: formData.role,
-              status: formData.status,
-              // Only update password if reset checkbox is checked and new password provided
-              ...(formData.resetPassword && formData.password && { password: formData.password })
-            }
-          : u
+        u.id === selectedUser.id ? { ...u, ...updatedFields } : u
       )
       saveUsers(updated)
 
-      // Sync update to Firebase in background
-      // ✅ FIX: Removed startsWith('user-') check — all users get synced to Firebase
-      if (selectedUser.id) {
+      // ✅ Sync session: if editing the currently logged-in user, refresh their session data
+      // This prevents auto-logout caused by stale currentUser in localStorage
+      syncCurrentUserSession({ ...selectedUser, ...updatedFields })
+
+      // ✅ Sync to Firebase using firebaseId (not local id)
+      // firebaseId is the actual Firestore document ID stored when the user was first created
+      const firebaseDocId = getFirebaseId(selectedUser)
+      if (firebaseDocId) {
         setTimeout(() => {
           const firebaseUpdates = {
             name: formData.name,
@@ -280,11 +305,13 @@ function UserManagement() {
             role: formData.role,
             status: formData.status
           }
-          // Only include password in Firebase update if reset was requested
+          // Include password in Firebase update only when reset is explicitly requested
           if (formData.resetPassword && formData.password) {
             firebaseUpdates.password = formData.password
           }
-          updateUserInFirebase(selectedUser.id, firebaseUpdates).catch(() => {})
+          updateUserInFirebase(firebaseDocId, firebaseUpdates).catch(err => {
+            console.error('Firebase update failed:', err)
+          })
         }, 0)
       }
 
@@ -295,7 +322,7 @@ function UserManagement() {
 
   // Toggle user between active and inactive status
   const toggleStatus = (user) => {
-    // OPS users must request status changes
+    // OPS users must request status changes via approval
     if (currentUser?.role === 'ops') {
       savePendingRequest({
         type: 'toggle_status',
@@ -319,10 +346,13 @@ function UserManagement() {
     )
     saveUsers(updated)
 
-    // ✅ FIX: Removed startsWith('user-') check — all users get synced to Firebase
-    if (user.id) {
+    // ✅ Use firebaseId for Firebase operations
+    const firebaseDocId = getFirebaseId(user)
+    if (firebaseDocId) {
       setTimeout(() => {
-        updateUserInFirebase(user.id, { status: newStatus }).catch(() => {})
+        updateUserInFirebase(firebaseDocId, { status: newStatus }).catch(err => {
+          console.error('Firebase status update failed:', err)
+        })
       }, 0)
     }
   }
@@ -338,16 +368,19 @@ function UserManagement() {
       const updated = users.filter(u => u.id !== user.id)
       saveUsers(updated)
 
-      // ✅ FIX: Removed startsWith('user-') check — all users get deleted from Firebase
-      if (user.id) {
+      // ✅ Use firebaseId for Firebase operations
+      const firebaseDocId = getFirebaseId(user)
+      if (firebaseDocId) {
         setTimeout(() => {
-          deleteUserFromFirebase(user.id).catch(() => {})
+          deleteUserFromFirebase(firebaseDocId).catch(err => {
+            console.error('Firebase delete failed:', err)
+          })
         }, 0)
       }
     }
   }
 
-  // Export filtered users list as a CSV file
+  // Export currently filtered users list as a CSV file
   const exportUsers = () => {
     const csv = [
       ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Created'].join(','),
@@ -648,7 +681,7 @@ function UserManagement() {
                         </select>
                       </div>
 
-                      {/* Password reset checkbox — hidden by default */}
+                      {/* Password reset toggle — unchecked by default */}
                       <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                         <div className={styles.passwordResetBox}>
                           <label className={styles.resetLabel}>
@@ -667,7 +700,7 @@ function UserManagement() {
                         </div>
                       </div>
 
-                      {/* New password input — shown only when reset is checked */}
+                      {/* New password input — visible only when reset is checked */}
                       {formData.resetPassword && (
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                           <label>New Password *</label>
