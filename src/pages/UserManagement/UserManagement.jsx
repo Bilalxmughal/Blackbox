@@ -26,11 +26,20 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import styles from './UserManagement.module.css'
 
+// ✅ FIREBASE IMPORTS
+import { 
+  getAllUsers, 
+  createUser, 
+  updateUser, 
+  deleteUser as deleteUserFromFirebase 
+} from '../../lib/firebase'
+
 function UserManagement() {
   const { currentUser } = useAuth()
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
   const [requests, setRequests] = useState([])
+  const [loading, setLoading] = useState(false)
   
   // UI States
   const [showModal, setShowModal] = useState(false)
@@ -52,17 +61,40 @@ function UserManagement() {
     status: 'active'
   })
 
-  // Load data
+  // ✅ Load data from Firebase
   useEffect(() => {
-    const savedUsers = localStorage.getItem('users')
-    const savedDepts = localStorage.getItem('departments')
-    
-    setUsers(savedUsers ? JSON.parse(savedUsers) : defaultUsers)
-    setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
-    setRequests(getPendingRequests())
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        // Users from Firebase
+        const usersResult = await getAllUsers()
+        if (usersResult.success) {
+          setUsers(usersResult.data)
+          // Sync to localStorage for backup
+          localStorage.setItem('users', JSON.stringify(usersResult.data))
+        } else {
+          // Fallback to localStorage
+          const savedUsers = localStorage.getItem('users')
+          setUsers(savedUsers ? JSON.parse(savedUsers) : defaultUsers)
+        }
+
+        // Departments from localStorage (ya alag se Firebase se la sakte hain)
+        const savedDepts = localStorage.getItem('departments')
+        setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
+        
+        // Pending requests from localStorage
+        setRequests(getPendingRequests())
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadData()
   }, [])
 
-  // Save functions
+  // ✅ Save functions - Firebase + LocalStorage sync
   const saveUsers = (updated) => {
     setUsers(updated)
     localStorage.setItem('users', JSON.stringify(updated))
@@ -147,84 +179,137 @@ function UserManagement() {
     setSelectedUser(null)
   }
 
-  const handleSubmit = () => {
+  // ✅ HANDLE SUBMIT - Firebase Integration
+  const handleSubmit = async () => {
     // Validation
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill all required fields')
       return
     }
 
-    if (modalMode === 'add') {
-      // Check if email exists
-      if (users.some(u => u.email === formData.email)) {
-        alert('Email already exists!')
-        return
-      }
+    setLoading(true)
 
-      // OPS needs to request
-      if (currentUser?.role === 'ops') {
-        savePendingRequest({
-          type: 'add_user',
-          data: formData,
-          requestedBy: currentUser.id,
-          requestedByName: currentUser.name
-        })
-        alert('Request sent to Super Admin for approval!')
+    try {
+      if (modalMode === 'add') {
+        // Check if email exists
+        const existingResult = await getAllUsers()
+        if (existingResult.success && existingResult.data.some(u => u.email === formData.email)) {
+          alert('Email already exists!')
+          setLoading(false)
+          return
+        }
+
+        // OPS needs to request
+        if (currentUser?.role === 'ops') {
+          savePendingRequest({
+            type: 'add_user',
+            data: formData,
+            requestedBy: currentUser.id,
+            requestedByName: currentUser.name
+          })
+          alert('Request sent to Super Admin for approval!')
+          closeModal()
+          setLoading(false)
+          return
+        }
+
+        // ✅ DIRECT ADD TO FIREBASE
+        const newUserData = {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password || 'password123',
+          department: formData.department,
+          role: formData.role,
+          status: 'active',
+          createdBy: currentUser?.id,
+          createdByName: currentUser?.name,
+          lastLogin: null
+        }
+
+        const result = await createUser(newUserData)
+        
+        if (result.success) {
+          // Refresh users list from Firebase
+          const refreshResult = await getAllUsers()
+          if (refreshResult.success) {
+            saveUsers(refreshResult.data)
+          }
+          alert('User created successfully in Firebase!')
+          closeModal()
+        } else {
+          alert('Error creating user: ' + result.error)
+        }
+        
+      } else if (modalMode === 'edit' && selectedUser) {
+        // Check if trying to change role
+        const isRoleChanged = formData.role !== selectedUser.role
+        
+        if (isRoleChanged && !canChangeRole) {
+          alert('Only Super Admin can change roles!')
+          setLoading(false)
+          return
+        }
+
+        // OPS needs to request for edit
+        if (currentUser?.role === 'ops') {
+          savePendingRequest({
+            type: 'edit_user',
+            userId: selectedUser.id,
+            data: { updates: formData },
+            requestedBy: currentUser.id,
+            requestedByName: currentUser.name
+          })
+          alert('Edit request sent to Super Admin!')
+          closeModal()
+          setLoading(false)
+          return
+        }
+
+        // ✅ UPDATE IN FIREBASE
+        const updates = {
+          name: formData.name,
+          phone: formData.phone,
+          department: formData.department,
+          role: formData.role,
+          status: formData.status,
+          updatedBy: currentUser?.id,
+          updatedAt: new Date().toISOString()
+        }
+
+        // Only update password if provided
+        if (formData.password) {
+          updates.password = formData.password
+        }
+
+        // Check if user has Firebase ID (not local generated)
+        if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
+          const result = await updateUser(selectedUser.id, updates)
+          if (!result.success) {
+            console.error('Firebase update failed:', result.error)
+          }
+        }
+
+        // Update local state
+        const updated = users.map(u => 
+          u.id === selectedUser.id 
+            ? { ...u, ...updates, password: formData.password || u.password }
+            : u
+        )
+        saveUsers(updated)
+        alert('User updated successfully!')
         closeModal()
-        return
       }
-
-      // Direct add for Admin/Super Admin
-      const newUser = {
-        id: `user-${Date.now()}`,
-        ...formData,
-        password: formData.password || 'password123',
-        createdAt: new Date().toISOString(),
-        lastLogin: null
-      }
-      saveUsers([...users, newUser])
-      
-    } else if (modalMode === 'edit' && selectedUser) {
-      // Check if trying to change role
-      const isRoleChanged = formData.role !== selectedUser.role
-      
-      if (isRoleChanged && !canChangeRole) {
-        alert('Only Super Admin can change roles!')
-        return
-      }
-
-      if (isRoleChanged && currentUser?.role === 'super_admin') {
-        // Role change needs approval even by Super Admin? No, direct change
-        // But let's log it
-        console.log('Role changed by Super Admin')
-      }
-
-      // OPS needs to request for edit
-      if (currentUser?.role === 'ops') {
-        savePendingRequest({
-          type: 'edit_user',
-          userId: selectedUser.id,
-          data: { updates: formData },
-          requestedBy: currentUser.id,
-          requestedByName: currentUser.name
-        })
-        alert('Edit request sent to Super Admin!')
-        closeModal()
-        return
-      }
-
-      const updated = users.map(u => 
-        u.id === selectedUser.id 
-          ? { ...u, ...formData, password: formData.password || u.password }
-          : u
-      )
-      saveUsers(updated)
+    } catch (error) {
+      console.error('Error in handleSubmit:', error)
+      alert('Operation failed: ' + error.message)
+    } finally {
+      setLoading(false)
     }
-    
-    closeModal()
   }
 
-  const toggleStatus = (user) => {
+  // ✅ TOGGLE STATUS - Firebase Update
+  const toggleStatus = async (user) => {
     if (currentUser?.role === 'ops') {
       savePendingRequest({
         type: 'toggle_status',
@@ -243,20 +328,55 @@ function UserManagement() {
     }
 
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
-    const updated = users.map(u => 
-      u.id === user.id ? { ...u, status: newStatus } : u
-    )
-    saveUsers(updated)
+
+    try {
+      // Update in Firebase if valid ID
+      if (user.id && !user.id.startsWith('user-')) {
+        await updateUser(user.id, { 
+          status: newStatus,
+          updatedAt: new Date().toISOString()
+        })
+      }
+
+      // Update local state
+      const updated = users.map(u => 
+        u.id === user.id ? { ...u, status: newStatus } : u
+      )
+      saveUsers(updated)
+    } catch (error) {
+      console.error('Error toggling status:', error)
+      alert('Failed to update status')
+    }
   }
 
-  const deleteUser = (user) => {
+  // ✅ DELETE USER - Firebase Delete
+  const deleteUser = async (user) => {
     if (!canDeleteUser(user)) {
       alert('You cannot delete this user!')
       return
     }
 
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      saveUsers(users.filter(u => u.id !== user.id))
+      setLoading(true)
+      try {
+        // Delete from Firebase if valid ID
+        if (user.id && !user.id.startsWith('user-')) {
+          const result = await deleteUserFromFirebase(user.id)
+          if (!result.success) {
+            console.error('Firebase delete failed:', result.error)
+          }
+        }
+
+        // Update local state
+        const updated = users.filter(u => u.id !== user.id)
+        saveUsers(updated)
+        alert('User deleted successfully!')
+      } catch (error) {
+        console.error('Error deleting user:', error)
+        alert('Failed to delete user')
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -265,7 +385,7 @@ function UserManagement() {
       ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Created'].join(','),
       ...filteredUsers.map(u => [
         u.name, u.email, u.phone, u.department, u.role, u.status, 
-        new Date(u.createdAt).toLocaleDateString()
+        new Date(u.createdAt?.toDate ? u.createdAt.toDate() : u.createdAt).toLocaleDateString()
       ].join(','))
     ].join('\n')
 
@@ -277,16 +397,26 @@ function UserManagement() {
     a.click()
   }
 
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <div>Loading users from Firebase...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
           <h1>User Management</h1>
-          <p>Manage system users, roles and permissions</p>
+          <p>Manage system users, roles and permissions (Firebase Connected)</p>
         </div>
         {canAddUser && (
-          <button className={styles.addBtn} onClick={openAddModal}>
+          <button className={styles.addBtn} onClick={openAddModal} disabled={loading}>
             <Plus size={18} /> Add User
           </button>
         )}
@@ -404,7 +534,7 @@ function UserManagement() {
                   <button 
                     className={`${styles.statusToggle} ${styles[user.status]}`}
                     onClick={() => toggleStatus(user)}
-                    disabled={!canEditUser(user)}
+                    disabled={!canEditUser(user) || loading}
                   >
                     {user.status === 'active' ? (
                       <><UserCheck size={14} /> Active</>
@@ -414,7 +544,7 @@ function UserManagement() {
                   </button>
                 </td>
                 <td className={styles.dateCell}>
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {user.createdAt ? new Date(user.createdAt?.toDate ? user.createdAt.toDate() : user.createdAt).toLocaleDateString() : '-'}
                 </td>
                 <td>
                   <div className={styles.actionButtons}>
@@ -431,6 +561,7 @@ function UserManagement() {
                         className={styles.actionBtn}
                         onClick={() => openEditModal(user)}
                         title="Edit User"
+                        disabled={loading}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -441,6 +572,7 @@ function UserManagement() {
                         className={`${styles.actionBtn} ${styles.danger}`}
                         onClick={() => deleteUser(user)}
                         title="Delete User"
+                        disabled={loading}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -506,7 +638,7 @@ function UserManagement() {
                   </div>
                   <div className={styles.detailRow}>
                     <label>Created</label>
-                    <span>{new Date(selectedUser?.createdAt).toLocaleString()}</span>
+                    <span>{selectedUser?.createdAt ? new Date(selectedUser.createdAt?.toDate ? selectedUser.createdAt.toDate() : selectedUser.createdAt).toLocaleString() : '-'}</span>
                   </div>
                 </div>
               ) : (
@@ -517,7 +649,7 @@ function UserManagement() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      disabled={modalMode === 'view'}
+                      disabled={modalMode === 'view' || loading}
                     />
                   </div>
 
@@ -527,7 +659,7 @@ function UserManagement() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      disabled={modalMode === 'edit'}
+                      disabled={modalMode === 'edit' || loading}
                     />
                   </div>
 
@@ -537,6 +669,7 @@ function UserManagement() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      disabled={loading}
                     />
                   </div>
 
@@ -548,6 +681,7 @@ function UserManagement() {
                         value={formData.password}
                         onChange={(e) => setFormData({...formData, password: e.target.value})}
                         placeholder="Leave empty for default"
+                        disabled={loading}
                       />
                     </div>
                   )}
@@ -557,6 +691,7 @@ function UserManagement() {
                     <select
                       value={formData.department}
                       onChange={(e) => setFormData({...formData, department: e.target.value})}
+                      disabled={loading}
                     >
                       {departments.map(d => (
                         <option key={d.id} value={d.name}>{d.name}</option>
@@ -569,7 +704,7 @@ function UserManagement() {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      disabled={!canChangeRole}
+                      disabled={!canChangeRole || loading}
                     >
                       {Object.values(ROLES).map(r => (
                         <option key={r.id} value={r.id}>{r.name}</option>
@@ -586,6 +721,7 @@ function UserManagement() {
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({...formData, status: e.target.value})}
+                        disabled={loading}
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -598,15 +734,15 @@ function UserManagement() {
 
             {modalMode !== 'view' && (
               <div className={styles.modalFooter}>
-                <button className={styles.cancelBtn} onClick={closeModal}>
+                <button className={styles.cancelBtn} onClick={closeModal} disabled={loading}>
                   Cancel
                 </button>
                 <button 
                   className={styles.saveBtn} 
                   onClick={handleSubmit}
-                  disabled={currentUser?.role === 'ops' && modalMode === 'add'}
+                  disabled={currentUser?.role === 'ops' && modalMode === 'add' || loading}
                 >
-                  {currentUser?.role === 'ops' ? 'Send Request' : 'Save User'}
+                  {loading ? 'Saving...' : currentUser?.role === 'ops' ? 'Send Request' : 'Save User'}
                 </button>
               </div>
             )}

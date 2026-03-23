@@ -12,7 +12,15 @@ import { initialCategories } from '../../data/initialCategories'
 import { defaultDepartments } from '../../data/users'
 import styles from './ComplaintBoard.module.css'
 import { useNavigate } from 'react-router-dom'
- 
+
+// ✅ FIREBASE IMPORTS
+import { 
+  createComplaint, 
+  getAllComplaints, 
+  updateComplaint,
+  getAllUsers 
+} from '../../lib/firebase'
+
 const calculateResolveRatio = (complaint) => {
   if (!complaint) return { ratio: 0, label: 'N/A', color: 'low' }
   const created = new Date(complaint.date)
@@ -33,12 +41,12 @@ const calculateResolveRatio = (complaint) => {
   }
   return { ratio: Math.max(5, Math.round(50 / daysDiff)), label: 'Overdue', color: 'low' }
 }
- 
+
 function ComplaintBoard() {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
- 
+
   const [complaints, setComplaints] = useState([])
   const [categories, setCategories] = useState([])
   const [departments, setDepartments] = useState([])
@@ -48,17 +56,18 @@ function ComplaintBoard() {
   const [selectedIds, setSelectedIds] = useState([])
   const [showBulkReassign, setShowBulkReassign] = useState(false)
   const [bulkReassignData, setBulkReassignData] = useState({ dept: '', userId: '', userName: '' })
- 
+  const [loading, setLoading] = useState(false)
+
   const [filters, setFilters] = useState({
     search: '', department: 'all', assignedTo: 'all',
     status: 'all', company: 'all', dateFrom: '', dateTo: ''
   })
- 
-  // ✅ Form State — complaintType + cascading fields added
+
+  // Form State
   const [formData, setFormData] = useState({
-    complaintType: '',       // 'new' | 'record'
-    routeName: '',           // record flow
-    company: '',             // new flow
+    complaintType: '',
+    routeName: '',
+    company: '',
     vendorName: '',
     captainName: '',
     captainContact: '',
@@ -75,28 +84,60 @@ function ComplaintBoard() {
     complaintBy: 'client',
     priority: 'medium'
   })
- 
+
   const [isSubmitting, setIsSubmitting] = useState(false)
- 
+
+  // ✅ Load data from Firebase
   useEffect(() => {
-    const loadData = () => {
-      const savedComplaints = localStorage.getItem('complaints')
-      setComplaints(savedComplaints ? JSON.parse(savedComplaints) : [])
-      const savedCats = localStorage.getItem('categories')
-      setCategories(savedCats ? JSON.parse(savedCats) : initialCategories)
-      const savedDepts = localStorage.getItem('departments')
-      setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
-      const savedOps = localStorage.getItem('buscaroOpsData')
-      if (savedOps) setOpsData(JSON.parse(savedOps))
-      const savedUsers = localStorage.getItem('users')
-      setUsers(savedUsers ? JSON.parse(savedUsers) : [])
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        // Complaints from Firebase
+        const complaintsResult = await getAllComplaints()
+        if (complaintsResult.success) {
+          setComplaints(complaintsResult.data)
+          // Sync to localStorage for backup
+          localStorage.setItem('complaints', JSON.stringify(complaintsResult.data))
+        } else {
+          // Fallback to localStorage
+          const savedComplaints = localStorage.getItem('complaints')
+          setComplaints(savedComplaints ? JSON.parse(savedComplaints) : [])
+        }
+
+        // Users from Firebase
+        const usersResult = await getAllUsers()
+        if (usersResult.success) {
+          setUsers(usersResult.data)
+          localStorage.setItem('users', JSON.stringify(usersResult.data))
+        } else {
+          const savedUsers = localStorage.getItem('users')
+          setUsers(savedUsers ? JSON.parse(savedUsers) : [])
+        }
+
+        // Categories, Departments, OpsData from localStorage
+        const savedCats = localStorage.getItem('categories')
+        setCategories(savedCats ? JSON.parse(savedCats) : initialCategories)
+        
+        const savedDepts = localStorage.getItem('departments')
+        setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
+        
+        const savedOps = localStorage.getItem('buscaroOpsData')
+        if (savedOps) setOpsData(JSON.parse(savedOps))
+      } catch (error) {
+        console.error('Error loading data:', error)
+      } finally {
+        setLoading(false)
+      }
     }
+
     loadData()
+    
+    // Auto-refresh every 30 seconds
     const interval = setInterval(loadData, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  // ✅ RECORD flow: Route → auto-fill everything
+  // RECORD flow: Route → auto-fill everything
   useEffect(() => {
     if (!formData.routeName || formData.complaintType !== 'record' || !opsData.length) return
     const row = opsData.find(item =>
@@ -115,7 +156,7 @@ function ComplaintBoard() {
     }
   }, [formData.routeName, opsData, formData.complaintType])
 
-  // ✅ NEW flow: Captain selected → auto-fill contact + bus
+  // NEW flow: Captain selected → auto-fill contact + bus
   useEffect(() => {
     if (!formData.captainName || formData.complaintType !== 'new' || !formData.vendorName) return
     const row = opsData.find(r =>
@@ -132,7 +173,7 @@ function ComplaintBoard() {
     }
   }, [formData.captainName, formData.vendorName, opsData, formData.complaintType])
 
-  // ✅ Cascading options for NEW flow
+  // Cascading options for NEW flow
   const companyOptions = useMemo(() =>
     [...new Set(opsData.map(r => r['Company']).filter(Boolean))].sort()
   , [opsData])
@@ -153,19 +194,19 @@ function ComplaintBoard() {
     if (!formData.assignedDept) return []
     return users.filter(u => u.department === formData.assignedDept && u.status === 'active')
   }, [formData.assignedDept, users])
- 
+
   const bulkAvailableUsers = useMemo(() => {
     if (!bulkReassignData.dept) return []
     return users.filter(u => u.department === bulkReassignData.dept && u.status === 'active')
   }, [bulkReassignData.dept, users])
- 
+
   const filterOptions = useMemo(() => {
     const companies = [...new Set(opsData.map(item => item['Company']).filter(Boolean))]
     const deptNames = departments.map(d => d.name)
     const userNames = [...new Set(complaints.map(c => c.assignedTo).filter(Boolean))]
     return { companies, deptNames, userNames }
   }, [opsData, departments, complaints])
- 
+
   const filteredComplaints = useMemo(() => {
     return complaints.filter(c => {
       const search = filters.search.toLowerCase()
@@ -185,7 +226,7 @@ function ComplaintBoard() {
       return matchesSearch && matchesDept && matchesUser && matchesStatus && matchesCompany && matchesDate
     }).sort((a, b) => new Date(b.date) - new Date(a.date))
   }, [complaints, filters])
- 
+
   const myStats = useMemo(() => {
     const myTickets = complaints.filter(c => c.submittedById === currentUser?.id)
     return {
@@ -195,12 +236,13 @@ function ComplaintBoard() {
       myClosed: myTickets.filter(c => c.ticketStatus === 'Closed').length
     }
   }, [complaints, currentUser])
- 
+
+  // ✅ Save complaints - Firebase + LocalStorage sync
   const saveComplaints = useCallback((updated) => {
     setComplaints(updated)
     localStorage.setItem('complaints', JSON.stringify(updated))
   }, [])
- 
+
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])
   }
@@ -213,71 +255,129 @@ function ComplaintBoard() {
     setShowBulkReassign(false)
     setBulkReassignData({ dept: '', userId: '', userName: '' })
   }
- 
-  const handleBulkClose = () => {
+
+  // ✅ HANDLE BULK CLOSE - Firebase Update
+  const handleBulkClose = async () => {
     if (!selectedIds.length) return
     const confirmed = window.confirm(`Are you sure you want to close ${selectedIds.length} ticket(s)?`)
     if (!confirmed) return
-    const updated = complaints.map(c => {
-      if (!selectedIds.includes(c.id)) return c
-      return {
-        ...c, ticketStatus: 'Closed', complaintStatus: 'Resolved',
-        resolvedPercent: 100, resolvedDate: new Date().toISOString(),
-        activityLog: [...(c.activityLog || []), {
-          id: `act-${Date.now()}`, type: 'status_change',
-          text: `Ticket bulk-closed by Admin ${currentUser?.name}`,
-          by: currentUser?.name, timestamp: new Date().toISOString()
-        }]
+
+    setLoading(true)
+    try {
+      const updatedComplaints = [...complaints]
+      
+      for (const id of selectedIds) {
+        const complaint = complaints.find(c => c.id === id)
+        if (complaint) {
+          const updates = {
+            ticketStatus: 'Closed',
+            complaintStatus: 'Resolved',
+            resolvedPercent: 100,
+            resolvedDate: new Date().toISOString(),
+            activityLog: [...(complaint.activityLog || []), {
+              id: `act-${Date.now()}`, type: 'status_change',
+              text: `Ticket bulk-closed by Admin ${currentUser?.name}`,
+              by: currentUser?.name, timestamp: new Date().toISOString()
+            }]
+          }
+          
+          // Update in Firebase if valid ID
+          if (id && !id.startsWith('comp-')) {
+            await updateComplaint(id, updates)
+          }
+          
+          // Update local array
+          const index = updatedComplaints.findIndex(c => c.id === id)
+          if (index !== -1) {
+            updatedComplaints[index] = { ...updatedComplaints[index], ...updates }
+          }
+        }
       }
-    })
-    saveComplaints(updated)
-    clearSelection()
+      
+      saveComplaints(updatedComplaints)
+      clearSelection()
+      alert('Tickets closed successfully!')
+    } catch (error) {
+      console.error('Error bulk closing:', error)
+      alert('Failed to close some tickets')
+    } finally {
+      setLoading(false)
+    }
   }
- 
-  const handleBulkReassign = () => {
+
+  // ✅ HANDLE BULK REASSIGN - Firebase Update
+  const handleBulkReassign = async () => {
     if (!bulkReassignData.dept || !bulkReassignData.userId) {
       alert('Please select department and user'); return
     }
-    const updated = complaints.map(c => {
-      if (!selectedIds.includes(c.id)) return c
-      return {
-        ...c,
-        assignedDept: bulkReassignData.dept,
-        assignedTo: bulkReassignData.userName,
-        assignedToId: bulkReassignData.userId,
-        assignedToName: bulkReassignData.userName,
-        reassignHistory: [...(c.reassignHistory || []), {
-          id: `reas-${Date.now()}`, fromUser: c.assignedTo, fromUserId: c.assignedToId,
-          toUser: bulkReassignData.userName, toUserId: bulkReassignData.userId,
-          toDept: bulkReassignData.dept,
-          reason: `Bulk reassigned by Admin ${currentUser?.name}`,
-          reassignedBy: currentUser?.name, reassignedById: currentUser?.id,
-          timestamp: new Date().toISOString()
-        }],
-        activityLog: [...(c.activityLog || []), {
-          id: `act-${Date.now()}`, type: 'reassign',
-          text: `Bulk reassigned to "${bulkReassignData.userName}" (${bulkReassignData.dept}) by Admin ${currentUser?.name}`,
-          by: currentUser?.name, timestamp: new Date().toISOString()
-        }]
+
+    setLoading(true)
+    try {
+      const updatedComplaints = [...complaints]
+      
+      for (const id of selectedIds) {
+        const complaint = complaints.find(c => c.id === id)
+        if (complaint) {
+          const updates = {
+            assignedDept: bulkReassignData.dept,
+            assignedTo: bulkReassignData.userName,
+            assignedToId: bulkReassignData.userId,
+            assignedToName: bulkReassignData.userName,
+            reassignHistory: [...(complaint.reassignHistory || []), {
+              id: `reas-${Date.now()}`, fromUser: complaint.assignedTo, fromUserId: complaint.assignedToId,
+              toUser: bulkReassignData.userName, toUserId: bulkReassignData.userId,
+              toDept: bulkReassignData.dept,
+              reason: `Bulk reassigned by Admin ${currentUser?.name}`,
+              reassignedBy: currentUser?.name, reassignedById: currentUser?.id,
+              timestamp: new Date().toISOString()
+            }],
+            activityLog: [...(complaint.activityLog || []), {
+              id: `act-${Date.now()}`, type: 'reassign',
+              text: `Bulk reassigned to "${bulkReassignData.userName}" (${bulkReassignData.dept}) by Admin ${currentUser?.name}`,
+              by: currentUser?.name, timestamp: new Date().toISOString()
+            }]
+          }
+          
+          // Update in Firebase if valid ID
+          if (id && !id.startsWith('comp-')) {
+            await updateComplaint(id, updates)
+          }
+          
+          // Update local array
+          const index = updatedComplaints.findIndex(c => c.id === id)
+          if (index !== -1) {
+            updatedComplaints[index] = { ...updatedComplaints[index], ...updates }
+          }
+        }
       }
-    })
-    saveComplaints(updated)
-    clearSelection()
+      
+      saveComplaints(updatedComplaints)
+      clearSelection()
+      alert('Tickets reassigned successfully!')
+    } catch (error) {
+      console.error('Error bulk reassigning:', error)
+      alert('Failed to reassign some tickets')
+    } finally {
+      setLoading(false)
+    }
   }
- 
+
+  // ✅ HANDLE SUBMIT - Create Complaint in Firebase
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
+
     try {
       if (!formData.assignedTo || !formData.assignedToName) {
         alert('Please select a user to assign this complaint')
         setIsSubmitting(false)
         return
       }
+
       const category = categories.find(c => c.id === formData.issueCategory)
       const ticketNo = generateTicketNo(category?.code || 'GEN', new Date().toISOString())
+
       const newComplaint = {
-        id: `comp-${Date.now()}`,
         ticketNo,
         date: new Date().toISOString(),
         submittedAt: new Date().toISOString(),
@@ -312,14 +412,31 @@ function ComplaintBoard() {
           by: currentUser?.name, timestamp: new Date().toISOString()
         }]
       }
-      saveComplaints([newComplaint, ...complaints])
-      resetForm()
-      setShowAddModal(false)
+
+      // ✅ SAVE TO FIREBASE
+      const result = await createComplaint(newComplaint)
+
+      if (result.success) {
+        // Refresh from Firebase
+        const refreshResult = await getAllComplaints()
+        if (refreshResult.success) {
+          saveComplaints(refreshResult.data)
+        }
+        
+        resetForm()
+        setShowAddModal(false)
+        alert('Ticket created successfully in Firebase!')
+      } else {
+        alert('Error creating ticket: ' + result.error)
+      }
+    } catch (error) {
+      console.error('Error creating complaint:', error)
+      alert('Failed to create ticket: ' + error.message)
     } finally {
       setIsSubmitting(false)
     }
   }
- 
+
   const resetForm = () => {
     setFormData({
       complaintType: '', routeName: '', company: '', vendorName: '',
@@ -330,7 +447,6 @@ function ComplaintBoard() {
     })
   }
 
-  // ✅ Complaint type change → reset route/company fields
   const handleComplaintTypeChange = (type) => {
     setFormData(prev => ({
       ...prev,
@@ -339,27 +455,39 @@ function ComplaintBoard() {
       captainContact: '', vendorContact: '', busNumber: ''
     }))
   }
- 
+
   const openDetail = (complaint) => navigate(`/complaints/${complaint.id}`)
+  
   const uniqueRoutes = useMemo(() =>
     [...new Set(opsData.map(item => item['Route Name']).filter(Boolean))].sort()
   , [opsData])
+  
   const allFilteredSelected = filteredComplaints.length > 0 && filteredComplaints.every(c => selectedIds.includes(c.id))
   const isNew = formData.complaintType === 'new'
   const isRecord = formData.complaintType === 'record'
- 
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+          <div>Loading complaints from Firebase...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
         <div>
           <h1>Complaint Board</h1>
-          <p>Manage and track all complaints & tickets</p>
+          <p>Manage and track all complaints & tickets (Firebase Connected)</p>
         </div>
-        <button className={styles.addBtn} onClick={() => setShowAddModal(true)}>
+        <button className={styles.addBtn} onClick={() => setShowAddModal(true)} disabled={loading}>
           <Plus size={20} /> Add Complaint
         </button>
       </div>
- 
+
       <div className={styles.statsSection}>
         <h3>My Tickets Overview</h3>
         <div className={styles.statsGrid}>
@@ -381,7 +509,7 @@ function ComplaintBoard() {
           </div>
         </div>
       </div>
- 
+
       <div className={styles.filtersBar}>
         <div className={styles.searchBox}>
           <Search size={18} />
@@ -403,29 +531,27 @@ function ComplaintBoard() {
           </select>
 
           <div className={styles.secondaryFilters}>
-        <div className={styles.dateFilter}>
-          <Calendar size={16} />
-          <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({...filters, dateFrom: e.target.value})} />
-          <span>to</span>
-          <input type="date" value={filters.dateTo} onChange={(e) => setFilters({...filters, dateTo: e.target.value})} />
-        </div>
-        <div className={styles.companyFilter}>
-          <Building2 size={16} color="#666" />
-          <select value={filters.company} onChange={(e) => setFilters({...filters, company: e.target.value})}>
-            <option value="all">All Companies</option>
-            {filterOptions.companies.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-      </div>
+            <div className={styles.dateFilter}>
+              <Calendar size={16} />
+              <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({...filters, dateFrom: e.target.value})} />
+              <span>to</span>
+              <input type="date" value={filters.dateTo} onChange={(e) => setFilters({...filters, dateTo: e.target.value})} />
+            </div>
+            <div className={styles.companyFilter}>
+              <Building2 size={16} color="#666" />
+              <select value={filters.company} onChange={(e) => setFilters({...filters, company: e.target.value})}>
+                <option value="all">All Companies</option>
+                {filterOptions.companies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
         </div>
 
         <button className={styles.clearBtn} onClick={() => setFilters({
           search: '', department: 'all', assignedTo: 'all', status: 'all', company: 'all', dateFrom: '', dateTo: ''
         })}>Clear</button>
       </div>
- 
-      
- 
+
       <div className={styles.tableContainer}>
         <table className={styles.complaintsTable}>
           <thead>
@@ -502,7 +628,7 @@ function ComplaintBoard() {
           </div>
         )}
       </div>
- 
+
       {isAdmin && selectedIds.length > 0 && (
         <div className={styles.bulkBar}>
           <div className={styles.bulkLeft}>
@@ -510,8 +636,10 @@ function ComplaintBoard() {
             <button className={styles.bulkClearBtn} onClick={clearSelection}><X size={16} /> Deselect All</button>
           </div>
           <div className={styles.bulkActions}>
-            <button className={styles.bulkCloseBtn} onClick={handleBulkClose}><CheckCircle2 size={16} /> Close All</button>
-            <button className={styles.bulkReassignBtn} onClick={() => setShowBulkReassign(!showBulkReassign)}>
+            <button className={styles.bulkCloseBtn} onClick={handleBulkClose} disabled={loading}>
+              <CheckCircle2 size={16} /> {loading ? 'Closing...' : 'Close All'}
+            </button>
+            <button className={styles.bulkReassignBtn} onClick={() => setShowBulkReassign(!showBulkReassign)} disabled={loading}>
               <UserCheck size={16} /> Reassign All <ChevronDown size={14} />
             </button>
           </div>
@@ -528,15 +656,15 @@ function ComplaintBoard() {
                 <option value="">Select User</option>
                 {bulkAvailableUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
-              <button className={styles.bulkReassignConfirm} onClick={handleBulkReassign} disabled={!bulkReassignData.dept || !bulkReassignData.userId}>
-                <UserCheck size={15} /> Confirm Reassign
+              <button className={styles.bulkReassignConfirm} onClick={handleBulkReassign} disabled={!bulkReassignData.dept || !bulkReassignData.userId || loading}>
+                <UserCheck size={15} /> {loading ? 'Reassigning...' : 'Confirm Reassign'}
               </button>
             </div>
           )}
         </div>
       )}
- 
-      {/* ✅ ADD COMPLAINT MODAL */}
+
+      {/* ADD COMPLAINT MODAL */}
       {showAddModal && (
         <div className={styles.modalOverlay} onClick={(e) => { if(e.target === e.currentTarget) { resetForm(); setShowAddModal(false) } }}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -547,7 +675,7 @@ function ComplaintBoard() {
 
             <form onSubmit={handleSubmit} className={styles.form}>
 
-              {/* ── STEP 1: Complaint Type ── */}
+              {/* STEP 1: Complaint Type */}
               <div className={styles.formSection}>
                 <div className={styles.formSectionLabel}>Complaint Type *</div>
                 <div className={styles.typeToggle}>
@@ -568,14 +696,14 @@ function ComplaintBoard() {
                 </div>
               </div>
 
-              {/* ── No type selected placeholder ── */}
+              {/* No type selected placeholder */}
               {!formData.complaintType && (
                 <div className={styles.typePlaceholder}>
                   Select complaint type to continue ↑
                 </div>
               )}
 
-              {/* ── RECORD flow: Route ── */}
+              {/* RECORD flow: Route */}
               {isRecord && (
                 <div className={styles.formSection}>
                   <div className={styles.formSectionLabel}>Route Information</div>
@@ -587,7 +715,6 @@ function ComplaintBoard() {
                         {uniqueRoutes.map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
                     </div>
-                    
                   </div>
                   {formData.routeName && (
                     <div className={styles.formRow3}>
@@ -616,7 +743,7 @@ function ComplaintBoard() {
                 </div>
               )}
 
-              {/* ── NEW flow: Company → Vendor → Captain ── */}
+              {/* NEW flow: Company → Vendor → Captain */}
               {isNew && (
                 <div className={styles.formSection}>
                   <div className={styles.formSectionLabel}>Route Information</div>
@@ -689,7 +816,7 @@ function ComplaintBoard() {
                 </div>
               )}
 
-              {/* ── Issue + Assignment (show when type selected) ── */}
+              {/* Issue + Assignment (show when type selected) */}
               {formData.complaintType && (
                 <>
                   <div className={styles.formSection}>
@@ -770,7 +897,7 @@ function ComplaintBoard() {
 
                   <div className={styles.formActions}>
                     <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setShowAddModal(false) }}>Cancel</button>
-                    <button type="submit" className={styles.submitBtn} disabled={isSubmitting}>
+                    <button type="submit" className={styles.submitBtn} disabled={isSubmitting || loading}>
                       {isSubmitting ? 'Creating...' : 'Create Ticket'}
                     </button>
                   </div>
@@ -783,5 +910,5 @@ function ComplaintBoard() {
     </div>
   )
 }
- 
+
 export default ComplaintBoard

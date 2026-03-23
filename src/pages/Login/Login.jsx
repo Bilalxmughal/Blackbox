@@ -56,10 +56,7 @@ function Login() {
           </button>
         </form>
         
-        <div className={styles.demo}>
-          <p>Demo Credentials:</p>
-          <code>super@buscaro.com / admin123</code>
-        </div>
+
       </div>
     </div>
   )
