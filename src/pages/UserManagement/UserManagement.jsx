@@ -26,6 +26,7 @@ import {
 } from '../../data/users'
 import { useAuth } from '../../context/AuthContext'
 import styles from './UserManagement.module.css'
+import { getAllUsers } from '../../lib/firebase'
 
 // Firebase imports for background sync
 import { 
@@ -59,6 +60,18 @@ function UserManagement() {
     role: 'user',
     status: 'active'
   })
+
+  useEffect(() => {
+  const loadFirebaseUsers = async () => {
+    const res = await getAllUsers()
+    if (res.success && res.data.length > 0) {
+      setUsers(res.data)
+      localStorage.setItem('users', JSON.stringify(res.data))
+    }
+  }
+
+  loadFirebaseUsers()
+}, [])
 
   // Load data instantly from localStorage on mount
   useEffect(() => {
@@ -271,15 +284,15 @@ function UserManagement() {
     ? { 
         ...u, 
         name: formData.name,
-        email: formData.email,   
+        email: formData.email,   // ✅ ADD THIS
         phone: formData.phone,
         department: formData.department,
         role: formData.role,
         status: formData.status,
-        ...(formData.resetPassword && formData.password && { password: formData.password })
       }
     : u
 )
+
 saveUsers(updated)
 
       // BACKGROUND: Update in Firebase silently
@@ -628,10 +641,10 @@ saveUsers(updated)
                   <div className={styles.formGroup}>
                     <label>Email *</label>
                     <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    />
+  type="email"
+  value={formData.email}
+  onChange={(e) => setFormData({...formData, email: e.target.value})}
+/>
                   </div>
 
                   <div className={styles.formGroup}>
