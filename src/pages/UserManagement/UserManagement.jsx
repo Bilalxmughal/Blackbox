@@ -43,7 +43,7 @@ function UserManagement() {
   
   // UI States
   const [showModal, setShowModal] = useState(false)
-  const [modalMode, setModalMode] = useState('add') // 'add', 'edit', 'view'
+  const [modalMode, setModalMode] = useState('add')
   const [selectedUser, setSelectedUser] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState('all')
@@ -61,40 +61,55 @@ function UserManagement() {
     status: 'active'
   })
 
-  // ✅ Load data from Firebase
+  // ✅ Load data from localStorage (fast) + background Firebase sync
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true)
-      try {
-        // Users from Firebase
-        const usersResult = await getAllUsers()
-        if (usersResult.success) {
-          setUsers(usersResult.data)
-          // Sync to localStorage for backup
-          localStorage.setItem('users', JSON.stringify(usersResult.data))
-        } else {
-          // Fallback to localStorage
-          const savedUsers = localStorage.getItem('users')
-          setUsers(savedUsers ? JSON.parse(savedUsers) : defaultUsers)
+    const loadData = () => {
+      // Pehle localStorage se load karo (instant)
+      const savedUsers = localStorage.getItem('users')
+      const savedDepts = localStorage.getItem('departments')
+      
+      if (savedUsers) {
+        try {
+          const parsed = JSON.parse(savedUsers)
+          if (Array.isArray(parsed)) {
+            setUsers(parsed)
+          }
+        } catch (e) {
+          console.error('Error parsing users:', e)
+          setUsers(defaultUsers)
+          localStorage.setItem('users', JSON.stringify(defaultUsers))
         }
-
-        // Departments from localStorage (ya alag se Firebase se la sakte hain)
-        const savedDepts = localStorage.getItem('departments')
-        setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
-        
-        // Pending requests from localStorage
-        setRequests(getPendingRequests())
-      } catch (error) {
-        console.error('Error loading data:', error)
-      } finally {
-        setLoading(false)
+      } else {
+        setUsers(defaultUsers)
+        localStorage.setItem('users', JSON.stringify(defaultUsers))
       }
+      
+      setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
+      setRequests(getPendingRequests())
     }
 
     loadData()
+    
+    // Background mein Firebase se sync karo
+    const syncWithFirebase = async () => {
+      try {
+        const result = await getAllUsers()
+        if (result.success && result.data.length > 0) {
+          setUsers(result.data)
+          localStorage.setItem('users', JSON.stringify(result.data))
+        }
+      } catch (error) {
+        console.log('Firebase sync failed:', error)
+      }
+    }
+    
+    syncWithFirebase()
+    
+    const interval = setInterval(syncWithFirebase, 30000)
+    return () => clearInterval(interval)
   }, [])
 
-  // ✅ Save functions - Firebase + LocalStorage sync
+  // Save functions
   const saveUsers = (updated) => {
     setUsers(updated)
     localStorage.setItem('users', JSON.stringify(updated))
@@ -179,7 +194,7 @@ function UserManagement() {
     setSelectedUser(null)
   }
 
-  // ✅ HANDLE SUBMIT - Firebase Integration
+  // ✅ HANDLE SUBMIT - Pehle localStorage, phir Firebase
   const handleSubmit = async () => {
     // Validation
     if (!formData.name || !formData.email || !formData.phone) {
@@ -192,8 +207,7 @@ function UserManagement() {
     try {
       if (modalMode === 'add') {
         // Check if email exists
-        const existingResult = await getAllUsers()
-        if (existingResult.success && existingResult.data.some(u => u.email === formData.email)) {
+        if (users.some(u => u.email === formData.email)) {
           alert('Email already exists!')
           setLoading(false)
           return
@@ -213,8 +227,9 @@ function UserManagement() {
           return
         }
 
-        // ✅ DIRECT ADD TO FIREBASE
-        const newUserData = {
+        // ✅ PEHLE LOCALSTORAGE MEIN ADD KARO (instant)
+        const newUser = {
+          id: `user-${Date.now()}`, // Local ID banao
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
@@ -222,27 +237,32 @@ function UserManagement() {
           department: formData.department,
           role: formData.role,
           status: 'active',
-          createdBy: currentUser?.id,
-          createdByName: currentUser?.name,
+          createdAt: new Date().toISOString(),
           lastLogin: null
         }
 
-        const result = await createUser(newUserData)
+        const updatedUsers = [...users, newUser]
+        saveUsers(updatedUsers)
         
-        if (result.success) {
-          // Refresh users list from Firebase
-          const refreshResult = await getAllUsers()
-          if (refreshResult.success) {
-            saveUsers(refreshResult.data)
+        // ✅ PHIR BACKGROUND MEIN FIREBASE MEIN SAVE KARO
+        try {
+          const firebaseResult = await createUser(newUser)
+          if (firebaseResult.success) {
+            // Update local ID with Firebase ID
+            const finalUsers = updatedUsers.map(u => 
+              u.id === newUser.id ? { ...u, id: firebaseResult.id } : u
+            )
+            saveUsers(finalUsers)
+            console.log('User saved to Firebase:', firebaseResult.id)
           }
-          alert('User created successfully in Firebase!')
-          closeModal()
-        } else {
-          alert('Error creating user: ' + result.error)
+        } catch (firebaseError) {
+          console.error('Firebase save failed (non-critical):', firebaseError)
         }
+
+        alert('User created successfully!')
+        closeModal()
         
       } else if (modalMode === 'edit' && selectedUser) {
-        // Check if trying to change role
         const isRoleChanged = formData.role !== selectedUser.role
         
         if (isRoleChanged && !canChangeRole) {
@@ -266,37 +286,29 @@ function UserManagement() {
           return
         }
 
-        // ✅ UPDATE IN FIREBASE
-        const updates = {
-          name: formData.name,
-          phone: formData.phone,
-          department: formData.department,
-          role: formData.role,
-          status: formData.status,
-          updatedBy: currentUser?.id,
-          updatedAt: new Date().toISOString()
-        }
-
-        // Only update password if provided
-        if (formData.password) {
-          updates.password = formData.password
-        }
-
-        // Check if user has Firebase ID (not local generated)
-        if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
-          const result = await updateUser(selectedUser.id, updates)
-          if (!result.success) {
-            console.error('Firebase update failed:', result.error)
-          }
-        }
-
-        // Update local state
+        // ✅ PEHLE LOCALSTORAGE UPDATE KARO
         const updated = users.map(u => 
           u.id === selectedUser.id 
-            ? { ...u, ...updates, password: formData.password || u.password }
+            ? { ...u, ...formData, password: formData.password || u.password }
             : u
         )
         saveUsers(updated)
+
+        // ✅ PHIR FIREBASE UPDATE KARO (background mein)
+        if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
+          try {
+            await updateUser(selectedUser.id, {
+              name: formData.name,
+              phone: formData.phone,
+              department: formData.department,
+              role: formData.role,
+              status: formData.status
+            })
+          } catch (firebaseError) {
+            console.error('Firebase update failed:', firebaseError)
+          }
+        }
+
         alert('User updated successfully!')
         closeModal()
       }
@@ -308,8 +320,7 @@ function UserManagement() {
     }
   }
 
-  // ✅ TOGGLE STATUS - Firebase Update
-  const toggleStatus = async (user) => {
+  const toggleStatus = (user) => {
     if (currentUser?.role === 'ops') {
       savePendingRequest({
         type: 'toggle_status',
@@ -328,54 +339,31 @@ function UserManagement() {
     }
 
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
+    const updated = users.map(u => 
+      u.id === user.id ? { ...u, status: newStatus } : u
+    )
+    saveUsers(updated)
 
-    try {
-      // Update in Firebase if valid ID
-      if (user.id && !user.id.startsWith('user-')) {
-        await updateUser(user.id, { 
-          status: newStatus,
-          updatedAt: new Date().toISOString()
-        })
-      }
-
-      // Update local state
-      const updated = users.map(u => 
-        u.id === user.id ? { ...u, status: newStatus } : u
-      )
-      saveUsers(updated)
-    } catch (error) {
-      console.error('Error toggling status:', error)
-      alert('Failed to update status')
+    // Background Firebase update
+    if (user.id && !user.id.startsWith('user-')) {
+      updateUser(user.id, { status: newStatus }).catch(console.error)
     }
   }
 
-  // ✅ DELETE USER - Firebase Delete
-  const deleteUser = async (user) => {
+  const deleteUser = (user) => {
     if (!canDeleteUser(user)) {
       alert('You cannot delete this user!')
       return
     }
 
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      setLoading(true)
-      try {
-        // Delete from Firebase if valid ID
-        if (user.id && !user.id.startsWith('user-')) {
-          const result = await deleteUserFromFirebase(user.id)
-          if (!result.success) {
-            console.error('Firebase delete failed:', result.error)
-          }
-        }
+      // Pehle localStorage se delete karo
+      const updated = users.filter(u => u.id !== user.id)
+      saveUsers(updated)
 
-        // Update local state
-        const updated = users.filter(u => u.id !== user.id)
-        saveUsers(updated)
-        alert('User deleted successfully!')
-      } catch (error) {
-        console.error('Error deleting user:', error)
-        alert('Failed to delete user')
-      } finally {
-        setLoading(false)
+      // Phir Firebase se delete karo (background mein)
+      if (user.id && !user.id.startsWith('user-')) {
+        deleteUserFromFirebase(user.id).catch(console.error)
       }
     }
   }
@@ -385,7 +373,7 @@ function UserManagement() {
       ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Created'].join(','),
       ...filteredUsers.map(u => [
         u.name, u.email, u.phone, u.department, u.role, u.status, 
-        new Date(u.createdAt?.toDate ? u.createdAt.toDate() : u.createdAt).toLocaleDateString()
+        new Date(u.createdAt).toLocaleDateString()
       ].join(','))
     ].join('\n')
 
@@ -397,11 +385,11 @@ function UserManagement() {
     a.click()
   }
 
-  if (loading) {
+  if (loading && users.length === 0) {
     return (
       <div className={styles.container}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-          <div>Loading users from Firebase...</div>
+          <div>Loading users...</div>
         </div>
       </div>
     )
@@ -413,7 +401,7 @@ function UserManagement() {
       <div className={styles.pageHeader}>
         <div>
           <h1>User Management</h1>
-          <p>Manage system users, roles and permissions (Firebase Connected)</p>
+          <p>Manage system users, roles and permissions</p>
         </div>
         {canAddUser && (
           <button className={styles.addBtn} onClick={openAddModal} disabled={loading}>
@@ -544,7 +532,7 @@ function UserManagement() {
                   </button>
                 </td>
                 <td className={styles.dateCell}>
-                  {user.createdAt ? new Date(user.createdAt?.toDate ? user.createdAt.toDate() : user.createdAt).toLocaleDateString() : '-'}
+                  {new Date(user.createdAt).toLocaleDateString()}
                 </td>
                 <td>
                   <div className={styles.actionButtons}>
@@ -638,7 +626,7 @@ function UserManagement() {
                   </div>
                   <div className={styles.detailRow}>
                     <label>Created</label>
-                    <span>{selectedUser?.createdAt ? new Date(selectedUser.createdAt?.toDate ? selectedUser.createdAt.toDate() : selectedUser.createdAt).toLocaleString() : '-'}</span>
+                    <span>{new Date(selectedUser?.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
               ) : (

@@ -1,11 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getAllUsers, 
-  createUser, 
-  updateUser, 
-  saveLoginSession,
-  createComplaint,
-  getAllComplaints 
+  saveLoginSession
 } from '../lib/firebase';
 import { defaultUsers, ROLES } from '../data/users';
 
@@ -22,56 +18,53 @@ export function AuthProvider({ children }) {
     
     const initializeData = async () => {
       try {
-        // Pehle Firebase se users check karo
-        const firebaseUsers = await getAllUsers();
+        // Pehle localStorage check karo (fast)
+        const savedUsers = localStorage.getItem('users');
+        const savedCurrentUser = localStorage.getItem('currentUser');
         
-        if (firebaseUsers.success && firebaseUsers.data.length > 0) {
-          console.log('Firebase se users loaded:', firebaseUsers.data.length);
-          // Firebase users ko localStorage mein bhi sync karo
-          localStorage.setItem('users', JSON.stringify(firebaseUsers.data));
-        } else {
-          // Agar Firebase mein nahi hain to localStorage check karo
-          const savedUsers = localStorage.getItem('users');
-          if (!savedUsers || savedUsers === 'null' || savedUsers === 'undefined') {
-            console.log('No valid users found, setting defaults to Firebase...');
-            // Default users ko Firebase mein bhi create karo
-            for (const user of defaultUsers) {
-              await createUser(user);
-            }
-            localStorage.setItem('users', JSON.stringify(defaultUsers));
-          } else {
+        if (savedUsers) {
+          try {
             const parsed = JSON.parse(savedUsers);
-            if (!Array.isArray(parsed)) {
-              throw new Error('Users is not an array');
+            if (Array.isArray(parsed)) {
+              console.log('Loaded users from localStorage:', parsed.length);
             }
-            console.log('Loaded users from localStorage:', parsed.length);
+          } catch (e) {
+            console.error('Error parsing localStorage users:', e);
+          }
+        } else {
+          // Agar localStorage empty hai to default set karo
+          localStorage.setItem('users', JSON.stringify(defaultUsers));
+        }
+
+        // Check for existing session
+        if (savedCurrentUser) {
+          try {
+            const user = JSON.parse(savedCurrentUser);
+            setCurrentUser(user);
+            setIsAuthenticated(true);
+            console.log('Restored session:', user.email);
+          } catch (e) {
+            localStorage.removeItem('currentUser');
           }
         }
-      } catch (e) {
-        console.error('CORRUPTED DATA:', e);
-        localStorage.clear();
-        // Default users ko Firebase mein bhi create karo
-        for (const user of defaultUsers) {
-          await createUser(user);
-        }
-        localStorage.setItem('users', JSON.stringify(defaultUsers));
-        console.log('Data reset to defaults and saved to Firebase');
-      }
-
-      // Check for existing session
-      const saved = localStorage.getItem('currentUser');
-      if (saved) {
+        
+        // Firebase se background mein sync karo (blocking nahi)
         try {
-          const user = JSON.parse(saved);
-          setCurrentUser(user);
-          setIsAuthenticated(true);
-          console.log('Restored session:', user.email);
-        } catch (e) {
-          localStorage.removeItem('currentUser');
+          const firebaseUsers = await getAllUsers();
+          if (firebaseUsers.success && firebaseUsers.data.length > 0) {
+            // Merge Firebase data with localStorage
+            localStorage.setItem('users', JSON.stringify(firebaseUsers.data));
+            console.log('Synced with Firebase:', firebaseUsers.data.length);
+          }
+        } catch (firebaseError) {
+          console.log('Firebase sync failed (non-critical):', firebaseError.message);
         }
+        
+      } catch (e) {
+        console.error('Initialization error:', e);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
     };
 
     initializeData();
@@ -79,99 +72,62 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     console.log('=== LOGIN ATTEMPT ===');
-    console.log('Input email:', JSON.stringify(email));
-    console.log('Input password:', JSON.stringify(password));
-
-    // Normalize inputs
+    
     const cleanEmail = email.toLowerCase().trim();
     const cleanPassword = password.trim();
-    
-    console.log('Clean email:', JSON.stringify(cleanEmail));
-    console.log('Clean password:', JSON.stringify(cleanPassword));
 
     try {
-      // Pehle Firebase se users lao
+      // Pehle localStorage se check karo (fast)
       let users = [];
-      const firebaseResult = await getAllUsers();
+      const savedUsers = localStorage.getItem('users');
       
-      if (firebaseResult.success && firebaseResult.data.length > 0) {
-        users = firebaseResult.data;
-        console.log('Users from Firebase:', users.length);
+      if (savedUsers) {
+        try {
+          users = JSON.parse(savedUsers);
+        } catch (e) {
+          users = defaultUsers;
+        }
       } else {
-        // Fallback to localStorage
-        const savedUsers = localStorage.getItem('users');
-        users = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
-        console.log('Users from localStorage:', users.length);
+        users = defaultUsers;
+        localStorage.setItem('users', JSON.stringify(defaultUsers));
       }
 
-      // Debug: Show all users
-      console.log('--- ALL USERS ---');
-      users.forEach((u, i) => {
-        console.log(`User ${i}:`, {
-          email: JSON.stringify(u.email),
-          password: JSON.stringify(u.password),
-          emailMatch: u.email?.toLowerCase().trim() === cleanEmail,
-          passwordMatch: u.password?.trim() === cleanPassword
-        });
-      });
+      console.log('Total users:', users.length);
 
       // Find user
       const user = users.find(u => {
         const userEmail = u.email?.toLowerCase().trim();
         const userPassword = u.password?.trim();
-        
-        const emailMatch = userEmail === cleanEmail;
-        const passwordMatch = userPassword === cleanPassword;
-        
-        console.log(`Checking ${u.email}:`, { emailMatch, passwordMatch });
-        
-        return emailMatch && passwordMatch;
+        return userEmail === cleanEmail && userPassword === cleanPassword;
       });
 
       console.log('Found user:', user ? user.name : 'NO MATCH');
 
       if (!user) {
-        // Check if email exists with wrong password
         const emailExists = users.some(u => 
           u.email?.toLowerCase().trim() === cleanEmail
         );
         
         if (emailExists) {
-          console.log('Email exists but password wrong');
           return { success: false, error: 'Incorrect password' };
         }
-        
-        console.log('Email not found in system');
         return { success: false, error: 'Email not registered' };
       }
 
-      // Check status
       if (user.status === 'inactive') {
         return { success: false, error: 'Account inactive. Contact Super Admin.' };
       }
 
-      // ✅ LOGIN SESSION FIREBASE MEIN SAVE KARO
-      const sessionResult = await saveLoginSession(user);
-      if (sessionResult.success) {
-        console.log('Login session saved to Firebase');
-      }
+      // ✅ LOGIN SESSION FIREBASE MEIN SAVE KARO (background mein)
+      saveLoginSession(user).catch(err => 
+        console.log('Login session save failed (non-critical):', err)
+      );
 
-      // Success - update login time
+      // Success
       const updatedUser = { 
         ...user, 
         lastLogin: new Date().toISOString() 
       };
-      
-      // Update user in Firebase if it has an ID
-      if (user.id && !user.id.startsWith('user-')) {
-        await updateUser(user.id, { lastLogin: new Date().toISOString() });
-      }
-      
-      // Update users array in localStorage
-      const updatedUsers = users.map(u => 
-        u.id === user.id ? updatedUser : u
-      );
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
       
       // Set session
       setCurrentUser(updatedUser);
@@ -191,6 +147,7 @@ export function AuthProvider({ children }) {
     setCurrentUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
+    // Page reload mat karo, bas state clear karo
   };
 
   const resetAllData = () => {
@@ -201,7 +158,6 @@ export function AuthProvider({ children }) {
   };
 
   const forceLogin = (email) => {
-    // Emergency bypass for testing
     const savedUsers = localStorage.getItem('users');
     const users = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
     const user = users.find(u => u.email?.toLowerCase().trim() === email.toLowerCase().trim());
@@ -222,9 +178,14 @@ export function AuthProvider({ children }) {
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        fontFamily: 'sans-serif'
+        fontFamily: 'sans-serif',
+        flexDirection: 'column',
+        gap: '10px'
       }}>
         <div>Loading CRM...</div>
+        <div style={{ fontSize: '12px', color: '#666' }}>
+          Please wait...
+        </div>
       </div>
     );
   }
