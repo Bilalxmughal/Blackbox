@@ -12,6 +12,7 @@ import {
   UserCog,
   Shield,
   MoreVertical,
+  Key,
   Eye
 } from 'lucide-react'
 import { 
@@ -150,20 +151,20 @@ function UserManagement() {
 
   // Open modal for editing user
   const openEditModal = (user) => {
-    setSelectedUser(user)
-    setModalMode('edit')
-    setFormData({
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      password: '',
-      department: user.department,
-      role: user.role,
-      status: user.status || 'active'
-    })
-    setShowModal(true)
-  }
-
+  setSelectedUser(user)
+  setModalMode('edit')
+  setFormData({
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    password: '',
+    department: user.department || '',
+    role: user.role || 'user',
+    status: user.status || 'active',
+    resetPassword: false  // ✅ Yeh add karo
+  })
+  setShowModal(true)
+}
   // Open modal for viewing user details
   const openViewModal = (user) => {
     setSelectedUser(user)
@@ -266,26 +267,39 @@ function UserManagement() {
 
       // INSTANT: Update locally first
       const updated = users.map(u => 
-        u.id === selectedUser.id 
-          ? { ...u, ...formData, password: formData.password || u.password }
-          : u
-      )
-      saveUsers(updated)
+  u.id === selectedUser.id 
+    ? { 
+        ...u, 
+        name: formData.name,
+        phone: formData.phone,
+        department: formData.department,
+        role: formData.role,
+        status: formData.status,
+        // ✅ SIRF JAB RESET CHECKED HO TAB PASSWORD UPDATE KARO
+        ...(formData.resetPassword && formData.password && { password: formData.password })
+      }
+    : u
+)
+saveUsers(updated)
 
       // BACKGROUND: Update in Firebase silently
       if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
-        setTimeout(() => {
-          updateUserInFirebase(selectedUser.id, {
-            name: formData.name,
-            phone: formData.phone,
-            department: formData.department,
-            role: formData.role,
-            status: formData.status
-          }).catch(() => {
-            // Silent fail
-          })
-        }, 0)
-      }
+  setTimeout(() => {
+    const firebaseUpdates = {
+      name: formData.name,
+      phone: formData.phone,
+      department: formData.department,
+      role: formData.role,
+      status: formData.status
+    }
+    // ✅ SIRF JAB RESET CHECKED HO TAB PASSWORD BHEJO
+    if (formData.resetPassword && formData.password) {
+      firebaseUpdates.password = formData.password
+    }
+    
+    updateUserInFirebase(selectedUser.id, firebaseUpdates).catch(() => {})
+  }, 0)
+}
 
       alert('User updated successfully!')
       closeModal()
@@ -670,17 +684,54 @@ function UserManagement() {
                   </div>
 
                   {modalMode === 'edit' && (
-                    <div className={styles.formGroup}>
-                      <label>Status</label>
-                      <select
-                        value={formData.status}
-                        onChange={(e) => setFormData({...formData, status: e.target.value})}
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                    </div>
-                  )}
+  <>
+    <div className={styles.formGroup}>
+      <label>Status</label>
+      <select
+        value={formData.status}
+        onChange={(e) => setFormData({...formData, status: e.target.value})}
+      >
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+    </div>
+
+    {/* ✅ PASSWORD RESET SECTION - YEH ADD KARO */}
+    <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+      <div className={styles.passwordResetBox}>
+        <label className={styles.resetLabel}>
+          <input
+            type="checkbox"
+            checked={formData.resetPassword}
+            onChange={(e) => setFormData({
+              ...formData, 
+              resetPassword: e.target.checked,
+              password: e.target.checked ? formData.password : ''
+            })}
+          />
+          <Key size={16} />
+          <span>Reset Password</span>
+        </label>
+      </div>
+    </div>
+
+    {formData.resetPassword && (
+      <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+        <label>New Password *</label>
+        <input
+          type="password"
+          value={formData.password}
+          onChange={(e) => setFormData({...formData, password: e.target.value})}
+          placeholder="Enter new password"
+          required
+        />
+        <small className={styles.hint}>
+          User will need to login with this new password
+        </small>
+      </div>
+    )}
+  </>
+)}
                 </div>
               )}
             </div>
