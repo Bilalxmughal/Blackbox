@@ -556,14 +556,14 @@ function ComplaintBoard() {
                     className={`${styles.typeBtn} ${isNew ? styles.typeBtnNew : ''}`}
                     onClick={() => handleComplaintTypeChange('new')}
                   >
-                    New
+                    Company Type
                   </button>
                   <button
                     type="button"
                     className={`${styles.typeBtn} ${isRecord ? styles.typeBtnRecord : ''}`}
                     onClick={() => handleComplaintTypeChange('record')}
                   >
-                    Recorded
+                    Route Type
                   </button>
                 </div>
               </div>

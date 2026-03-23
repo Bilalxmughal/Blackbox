@@ -1,28 +1,21 @@
-import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { 
-  LayoutDashboard, 
-  Database, 
-  ClipboardList, 
-  Settings, 
-  Users,
-  ChevronLeft, 
-  ChevronRight,
-  LogOut
+  LayoutDashboard, Database, ClipboardList, Settings, Users,
+  ChevronLeft, ChevronRight, LogOut
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import styles from './LeftPanel.module.css'
 
 const menuItems = [
-  { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-  { name: 'Buscaro Ops Data', path: '/ops-data', icon: Database },
-  { name: 'Complaint Board', path: '/complaints', icon: ClipboardList },
-  { name: 'User Management', path: '/users', icon: Users },
-  { name: 'Backend Settings', path: '/backend', icon: Settings },
+  { name: 'Dashboard',        path: '/',          icon: LayoutDashboard },
+  { name: 'Buscaro Ops Data', path: '/ops-data',  icon: Database },
+  { name: 'Complaint Board',  path: '/complaints', icon: ClipboardList },
+  { name: 'User Management',  path: '/users',      icon: Users },
+  { name: 'Backend Settings', path: '/backend',    icon: Settings },
 ]
 
-function LeftPanel() {
-  const [collapsed, setCollapsed] = useState(false)
+// ✅ collapsed + setCollapsed ab props se aate hain
+function LeftPanel({ collapsed, setCollapsed }) {
   const { currentUser, logout } = useAuth()
 
   return (
@@ -37,10 +30,7 @@ function LeftPanel() {
             </div>
           )}
         </div>
-        <button 
-          className={styles.collapseBtn}
-          onClick={() => setCollapsed(!collapsed)}
-        >
+        <button className={styles.collapseBtn} onClick={() => setCollapsed(!collapsed)}>
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
       </div>
@@ -52,7 +42,8 @@ function LeftPanel() {
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) => 
+              end={item.path === '/'}
+              className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
               }
             >
@@ -63,7 +54,6 @@ function LeftPanel() {
         })}
       </nav>
 
-      {/* User Section with Logout - YEH ADD KIYA HAI */}
       <div className={styles.userSection}>
         {!collapsed && (
           <div className={styles.userInfo}>
