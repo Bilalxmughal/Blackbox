@@ -150,107 +150,147 @@ function UserManagement() {
 
   // Open modal for editing user
   const openEditModal = (user) => {
-  setSelectedUser(user)
-  setModalMode('edit')
-  setFormData({
-    name: user.name,
-    email: user.email,
-    phone: user.phone || '',
-    password: '', // Empty by default - only set if admin wants to change
-    department: user.department,
-    role: user.role,
-    status: user.status || 'active',
-    resetPassword: false // New field to track if password should be reset
-  })
-  setShowModal(true)
-}
-
-// Handle form submit - INSTANT local save, background Firebase sync
-const handleSubmit = () => {
-  // Validation
-  if (!formData.name || !formData.email || !formData.phone) {
-    alert('Please fill all required fields')
-    return
+    setSelectedUser(user)
+    setModalMode('edit')
+    setFormData({
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      password: '',
+      department: user.department,
+      role: user.role,
+      status: user.status || 'active'
+    })
+    setShowModal(true)
   }
 
-  if (modalMode === 'add') {
-    // ... existing add code ...
-  } else if (modalMode === 'edit' && selectedUser) {
-    // Check role change permission
-    const isRoleChanged = formData.role !== selectedUser.role
-    
-    if (isRoleChanged && !canChangeRole) {
-      alert('Only Super Admin can change roles!')
+  // Open modal for viewing user details
+  const openViewModal = (user) => {
+    setSelectedUser(user)
+    setModalMode('view')
+    setShowModal(true)
+  }
+
+  // Close modal
+  const closeModal = () => {
+    setShowModal(false)
+    setSelectedUser(null)
+  }
+
+  // Handle form submit - INSTANT local save, background Firebase sync
+  const handleSubmit = () => {
+    // Validation
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert('Please fill all required fields')
       return
     }
 
-    // OPS users need approval for edits
-    if (currentUser?.role === 'ops') {
-      savePendingRequest({
-        type: 'edit_user',
-        userId: selectedUser.id,
-        data: { 
-          updates: {
-            name: formData.name,
-            phone: formData.phone,
-            department: formData.department,
-            role: formData.role,
-            status: formData.status,
-            // Include password reset request if provided
-            ...(formData.password && { password: formData.password })
-          }
-        },
-        requestedBy: currentUser.id,
-        requestedByName: currentUser.name
-      })
-      alert('Edit request sent to Super Admin!')
-      closeModal()
-      return
-    }
+    if (modalMode === 'add') {
+      // Check for duplicate email
+      if (users.some(u => u.email === formData.email)) {
+        alert('Email already exists!')
+        return
+      }
 
-    // INSTANT: Update locally first
-    const updated = users.map(u => 
-      u.id === selectedUser.id 
-        ? { 
-            ...u, 
-            name: formData.name,
-            phone: formData.phone,
-            department: formData.department,
-            role: formData.role,
-            status: formData.status,
-            // Only update password if provided
-            ...(formData.password && { password: formData.password })
-          }
-        : u
-    )
-    saveUsers(updated)
+      // OPS users need approval for new users
+      if (currentUser?.role === 'ops') {
+        savePendingRequest({
+          type: 'add_user',
+          data: formData,
+          requestedBy: currentUser.id,
+          requestedByName: currentUser.name
+        })
+        alert('Request sent to Super Admin for approval!')
+        closeModal()
+        return
+      }
 
-    // BACKGROUND: Update in Firebase silently
-    if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
+      // INSTANT: Create user locally first (no waiting)
+      const newUser = {
+        id: `user-${Date.now()}`, // Generate local ID
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password || 'password123',
+        department: formData.department,
+        role: formData.role,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        lastLogin: null
+      }
+
+      // Update local state immediately
+      const updatedUsers = [...users, newUser]
+      saveUsers(updatedUsers)
+      
+      // BACKGROUND: Sync to Firebase silently (no blocking)
       setTimeout(() => {
-        const firebaseUpdates = {
-          name: formData.name,
-          phone: formData.phone,
-          department: formData.department,
-          role: formData.role,
-          status: formData.status
-        }
-        // Only include password in Firebase update if provided
-        if (formData.password) {
-          firebaseUpdates.password = formData.password
-        }
-        
-        updateUserInFirebase(selectedUser.id, firebaseUpdates).catch(() => {
-          // Silent fail
+        createUserInFirebase(newUser).then(result => {
+          if (result.success) {
+            // Update local ID with Firebase ID
+            const finalUsers = updatedUsers.map(u => 
+              u.id === newUser.id ? { ...u, id: result.id } : u
+            )
+            saveUsers(finalUsers)
+          }
+        }).catch(() => {
+          // Silent fail - will retry later
         })
       }, 0)
+
+      alert('User created successfully!')
+      closeModal()
+      
+    } else if (modalMode === 'edit' && selectedUser) {
+      // Check role change permission
+      const isRoleChanged = formData.role !== selectedUser.role
+      
+      if (isRoleChanged && !canChangeRole) {
+        alert('Only Super Admin can change roles!')
+        return
+      }
+
+      // OPS users need approval for edits
+      if (currentUser?.role === 'ops') {
+        savePendingRequest({
+          type: 'edit_user',
+          userId: selectedUser.id,
+          data: { updates: formData },
+          requestedBy: currentUser.id,
+          requestedByName: currentUser.name
+        })
+        alert('Edit request sent to Super Admin!')
+        closeModal()
+        return
+      }
+
+      // INSTANT: Update locally first
+      const updated = users.map(u => 
+        u.id === selectedUser.id 
+          ? { ...u, ...formData, password: formData.password || u.password }
+          : u
+      )
+      saveUsers(updated)
+
+      // BACKGROUND: Update in Firebase silently
+      if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
+        setTimeout(() => {
+          updateUserInFirebase(selectedUser.id, {
+            name: formData.name,
+            phone: formData.phone,
+            department: formData.department,
+            role: formData.role,
+            status: formData.status
+          }).catch(() => {
+            // Silent fail
+          })
+        }, 0)
+      }
+
+      alert('User updated successfully!')
+      closeModal()
     }
-
-    alert('User updated successfully!')
-    closeModal()
   }
-}
-
 
   // Toggle user status (active/inactive)
   const toggleStatus = (user) => {
