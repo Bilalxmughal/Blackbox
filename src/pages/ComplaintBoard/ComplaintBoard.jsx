@@ -466,15 +466,7 @@ function ComplaintBoard() {
   const isNew = formData.complaintType === 'new'
   const isRecord = formData.complaintType === 'record'
 
-  if (loading) {
-    return (
-      <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-          <div>Loading complaints from Firebase...</div>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
     <div className={styles.container}>
