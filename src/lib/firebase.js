@@ -39,8 +39,8 @@ export const createUser = async (userData) => {
   try {
     const userWithTimestamp = {
       ...userData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     
     const docRef = await addDoc(collection(db, "users"), userWithTimestamp);
@@ -58,10 +58,11 @@ export const getAllUsers = async () => {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     
-    const users = [];
-    querySnapshot.forEach((doc) => {
-      users.push({ id: doc.id, ...doc.data() });
-    });
+    users.push({ 
+  id: doc.id, 
+  ...doc.data(),
+  createdAt: doc.data().createdAt || new Date().toISOString()
+})
     
     return { success: true, data: users };
   } catch (error) {
