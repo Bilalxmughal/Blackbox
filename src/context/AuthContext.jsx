@@ -174,36 +174,42 @@ export function AuthProvider({ children }) {
   const createUserInstant = async (userData) => {
     // ✅ INSTANT: LocalStorage mein add karo
     const newUser = {
-      id: `user-${Date.now()}`,
-      ...userData,
-      createdAt: new Date().toISOString(),
-      status: 'active'
-    };
+    id: `user-${Date.now()}`,
+    ...userData,
+    createdAt: new Date().toISOString(),
+    status: 'active'
+  };
+
 
     const savedUsers = localStorage.getItem('users');
-    const users = savedUsers ? JSON.parse(savedUsers) : [];
-    const updated = [...users, newUser];
-    localStorage.setItem('users', JSON.stringify(updated));
-    
-    console.log('✅ User created instantly:', newUser.email);
+  const users = savedUsers ? JSON.parse(savedUsers) : [];
+  const updated = [...users, newUser];
+  localStorage.setItem('users', JSON.stringify(updated));
+
+  console.log('✅ User created instantly:', newUser.email);
     
     // ✅ BACKGROUND: Firebase mein bhi save karo (silent)
     setTimeout(async () => {
-      try {
-        const result = await createUser(newUser);
-        if (result.success) {
-          // Update local ID with Firebase ID
-          const finalUsers = updated.map(u => 
-            u.id === newUser.id ? { ...u, id: result.id } : u
-          );
-          localStorage.setItem('users', JSON.stringify(finalUsers));
-          console.log('🔥 User synced to Firebase:', result.id);
-        }
-      } catch (err) {
-        // Silent fail - will sync later
-        console.log('Firebase sync pending for:', newUser.email);
-      }
-    }, 0);
+  try {
+    const firebaseUser = {
+      ...newUser,
+      password: newUser.password || '123456' // default password agar missing ho
+    };
+
+    const result = await createUser(firebaseUser);
+
+    if (result.success) {
+      // LocalStorage me Firebase ID update
+      const finalUsers = updated.map(u => 
+        u.id === newUser.id ? { ...u, id: result.id } : u
+      );
+      localStorage.setItem('users', JSON.stringify(finalUsers));
+      console.log('🔥 User synced to Firebase:', result.id);
+    }
+  } catch (err) {
+    console.log('Firebase sync pending for:', newUser.email);
+  }
+}, 0);
     
     return { success: true, user: newUser };
   };
