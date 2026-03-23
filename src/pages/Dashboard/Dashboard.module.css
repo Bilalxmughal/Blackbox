@@ -1,314 +1,222 @@
-.dashboard {
-  padding: 20px 0;
-}
+.dashboard { padding: 20px 0; }
 
-.pageTitle {
-  color: #1a1a2e;
-  margin-bottom: 30px;
-  font-size: 28px;
+/* ── Welcome ── */
+.welcome {
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+.welcome h1 { color: #1a1a2e; font-size: 24px; margin: 0 0 5px; }
+.welcome p  { color: #00d4ff; font-size: 14px; font-weight: 500; margin: 0; }
 
+.resolveRateBadge {
+  display: flex; flex-direction: column; align-items: center;
+  background: linear-gradient(135deg, #00d4ff18, #00d4ff08);
+  border: 1.5px solid #00d4ff40; border-radius: 14px;
+  padding: 12px 24px; min-width: 90px;
+}
+.rateNum   { font-size: 26px; font-weight: 700; color: #00d4ff; line-height: 1; }
+.rateLabel { font-size: 11px; color: #888; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Stat Cards ── */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px; margin-bottom: 24px;
 }
-
 .statCard {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  background: white; border-radius: 12px; padding: 20px;
+  display: flex; align-items: center; gap: 16px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  border-top: 4px solid;
-  transition: transform 0.2s;
+  border-top: 4px solid; transition: transform 0.2s;
 }
-
-.statCard:hover {
-  transform: translateY(-5px);
-}
-
+.statCard:hover { transform: translateY(-4px); }
 .cardIcon {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 52px; height: 52px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cardInfo h3 { font-size: 28px; margin: 0; color: #1a1a2e; font-weight: 700; }
+.cardInfo p  { margin: 4px 0 0; color: #666; font-size: 13px; }
+
+/* ── Section Title ── */
+.sectionTitle {
+  display: flex; align-items: center; gap: 8px;
+  color: #1a1a2e; font-size: 17px; margin: 0 0 18px;
 }
 
-.cardInfo h3 {
-  font-size: 32px;
-  margin: 0;
-  color: #1a1a2e;
+/* ── Financial Summary ── */
+.financeSection {
+  background: white; border-radius: 12px; padding: 24px;
+  margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
-
-.cardInfo p {
-  margin: 5px 0 0;
-  color: #666;
-  font-size: 14px;
-}
-
-.dashboardGrid {
+.financeGrid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 30px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
 }
-
-.chartSection, .recentSection {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.chartSection h3, .recentSection h3 {
-  margin-top: 0;
-  color: #1a1a2e;
-  font-size: 18px;
-  margin-bottom: 20px;
-}
-
-.chartPlaceholder {
-  height: 300px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  font-size: 18px;
-}
-
-.recentList {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.recentItem {
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border-left: 4px solid #00d4ff;
-}
-
-.ticketId {
-  font-size: 12px;
-  color: #00d4ff;
-  font-weight: 600;
-}
-
-.recentItem p {
-  margin: 8px 0;
-  color: #333;
-  font-size: 14px;
-}
-
-.statusOpen {
-  background: #ff6b6b20;
-  color: #ff6b6b;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.statusProgress {
-  background: #ffd93d20;
-  color: #b8860b;
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-/* Add to existing Dashboard.module.css */
-
-.welcome {
-  margin-bottom: 30px;
-}
-
-.welcome h1 {
-  color: #1a1a2e;
-  font-size: 24px;
-  margin-bottom: 5px;
-}
-
-.welcome p {
-  color: #00d4ff;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.analyticsSection {
-  background: white;
-  border-radius: 12px;
-  padding: 25px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.analyticsSection h2 {
-  color: #1a1a2e;
-  font-size: 18px;
-  margin-bottom: 20px;
-}
-
-.companyGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 15px;
-}
-
-.companyCard {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 10px;
-  border-left: 4px solid #00d4ff;
-}
-
-.companyCard h4 {
-  color: #1a1a2e;
-  font-size: 16px;
-  margin-bottom: 5px;
-}
-
-.companyCard p {
-  color: #666;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.activityList {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.activityItem {
-  background: #f8f9fa;
-  padding: 15px;
-  border-radius: 8px;
-  border-left: 3px solid #00d4ff;
-}
-
-.activityItem .ticketId {
-  font-size: 12px;
-  color: #00d4ff;
-  font-weight: 600;
-}
-
-.activityItem p {
-  margin: 8px 0;
-  color: #555;
-  font-size: 14px;
-}
-
-.Open, .InProgress, .Closed {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.quickStats {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.quickStats .stat {
-  text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 10px;
-}
-
-.quickStats .stat span {
-  display: block;
-  font-size: 32px;
-  font-weight: 700;
-  color: #00d4ff;
-  margin-bottom: 5px;
-}
-
-.quickStats .stat label {
-  color: #666;
-  font-size: 14px;
-}
-
-/* Modern horizontal cards for Company Routes */
-.companyCardsRow {
-  display: flex;
-  gap: 15px;
-  overflow-x: auto;
-  padding-bottom: 10px;
-  scroll-behavior: smooth;
-}
-
-.companyCardsRow::-webkit-scrollbar {
-  height: 6px;
-}
-
-.companyCardsRow::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 212, 255, 0.4);
-  border-radius: 3px;
-}
-
-.companyCardModern {
-  flex: 0 0 auto;
-  background: #ffffff;
-  border-radius: 14px;
-  padding: 15px 20px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 200px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+.financeCard {
+  background: #f8f9fa; border-radius: 12px; padding: 20px;
+  /* top accent line only — no left border */
+  border-top: 3px solid var(--accent);
   transition: transform 0.2s, box-shadow 0.2s;
 }
-
-.companyCardModern:hover {
+.financeCard:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+.financeHeader {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.financeIconWrap {
+  width: 36px; height: 36px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.financeLabel { font-size: 12px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin: 0; }
+.financeShort { display: block; font-size: 26px; font-weight: 800; line-height: 1.1; margin-bottom: 4px; }
+.financeFull  { display: block; font-size: 12px; color: #555; font-weight: 600; margin-bottom: 4px; }
+.financeSub   { font-size: 11px; color: #aaa; }
+
+/* ── Company Analysis ── */
+.analyticsSection {
+  background: white; border-radius: 12px; padding: 24px;
+  margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.companyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.companyCard {
+  background: #f8f9fa; border-radius: 14px; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  /* no left border at all */
+}
+.companyCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+.companyAccentBar { height: 4px; width: 100%; }
+
+.companyCardBody  { padding: 16px 18px; }
+
+.companyCardHeader {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.companyIconCircle {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.companyName {
+  font-size: 15px; font-weight: 700; color: #1a1a2e; margin: 0 0 3px;
+}
+.companyGmvPct { font-size: 11px; font-weight: 600; }
+
+/* stats row */
+.companyStats {
+  display: flex; align-items: center; justify-content: space-around;
+  background: white; border-radius: 10px; padding: 12px 8px;
+  margin-bottom: 14px;
+}
+.companyStat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.companyStatVal { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+.companyStatLbl { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.4px; }
+.companyStatDivider { width: 1px; height: 30px; background: #eee; }
+
+/* finance row */
+.companyFinance {
+  display: flex; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.companyFinItem { display: flex; flex-direction: column; gap: 2px; }
+.companyFinLbl  { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.3px; }
+.companyFinVal  { font-size: 13px; font-weight: 700; color: #1a1a2e; }
+
+/* gmv bar */
+.companyBarWrap  { display: flex; align-items: center; gap: 8px; }
+.companyBarTrack {
+  flex: 1; height: 5px; background: #e8e8e8; border-radius: 3px; overflow: hidden;
+}
+.companyBarFill  { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.companyBarPct   { font-size: 11px; font-weight: 700; min-width: 32px; text-align: right; }
+
+/* ── Main Grid ── */
+.dashboardGrid {
+  display: grid; grid-template-columns: 2fr 1fr; gap: 24px;
 }
 
-.companyIcon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e0f7ff;
-  border-radius: 8px;
+/* ── Recent Activity Table ── */
+.tableSection {
+  background: white; border-radius: 12px; padding: 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden;
 }
+.tableSectionHeader {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;
+}
+.tableSectionHeader h3 { margin: 0; color: #1a1a2e; font-size: 16px; }
+.viewAllBtn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1px solid #e0e0e0; color: #666;
+  font-size: 12px; padding: 5px 12px; border-radius: 6px;
+  cursor: pointer; transition: all 0.2s;
+}
+.viewAllBtn:hover { border-color: #00d4ff; color: #00d4ff; background: #00d4ff0a; }
 
-.companyInfo h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0;
-  color: #1a1a2e;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.miniTableWrap { overflow-x: auto; }
+.miniTable { width: 100%; border-collapse: collapse; font-size: 13px; }
+.miniTable thead tr { background: #f8f9fa; }
+.miniTable th {
+  padding: 10px 12px; text-align: left; color: #888;
+  font-weight: 600; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.4px; white-space: nowrap; border-bottom: 1px solid #eee;
 }
+.miniTable td {
+  padding: 11px 12px; border-bottom: 1px solid #f5f5f5;
+  color: #333; vertical-align: middle;
+}
+.clickableRow { cursor: pointer; transition: background 0.15s; }
+.clickableRow:hover { background: #f8fbff; }
+.clickableRow:last-child td { border-bottom: none; }
 
-.companyInfo p {
-  font-size: 12px;
-  color: #666;
-  margin: 2px 0 0;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.ticketNo {
+  font-size: 12px; color: #00d4ff; font-weight: 700;
+  background: #00d4ff10; padding: 3px 8px; border-radius: 4px; white-space: nowrap;
 }
+.routeCell { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dateCell  { white-space: nowrap; color: #888; font-size: 12px; }
+.statusPill {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.emptyTable { text-align: center; padding: 40px; color: #ccc; font-size: 14px; }
+
+/* ── User-wise ── */
+.userSection {
+  background: white; border-radius: 12px; padding: 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.userSection h3 {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 0 18px; color: #1a1a2e; font-size: 16px;
+}
+.userStatsList {
+  display: flex; flex-direction: column; gap: 16px;
+  max-height: 420px; overflow-y: auto;
+}
+.userStatsList::-webkit-scrollbar { width: 4px; }
+.userStatsList::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 2px; }
+
+.userStatRow  { display: flex; align-items: flex-start; gap: 12px; }
+.userAvatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff, #0099cc);
+  color: white; font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.userInfo    { flex: 1; min-width: 0; }
+.userNameRow { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.userName    { font-size: 13px; font-weight: 600; color: #1a1a2e; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.userTotal   { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+.userBarTrack { height: 5px; background: #f0f0f0; border-radius: 3px; overflow: hidden; margin-bottom: 6px; }
+.userBarFill  { height: 100%; background: linear-gradient(90deg, #00d4ff, #0099cc); border-radius: 3px; transition: width 0.4s ease; }
+.userBadges   { display: flex; gap: 10px; font-size: 11px; font-weight: 500; }
