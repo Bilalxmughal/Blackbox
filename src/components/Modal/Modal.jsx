@@ -13,7 +13,7 @@ function Modal({ isOpen, onClose, title, children, size = 'medium' }) {
         <div className={styles.modalHeader}>
           <h3>{title}</h3>
           <button onClick={onClose} className={styles.closeBtn}>
-            <X size={20} />
+            <X size={12} />
           </button>
         </div>
         <div className={styles.modalBody}>

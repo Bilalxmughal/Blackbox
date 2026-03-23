@@ -17,7 +17,7 @@
   background: white;
   border-radius: 12px;
   width: 100%;
-  max-width: 800px;           /* Fixed max-width */
+  max-width: 900px;           /* Fixed max-width */
   max-height: calc(100vh - 40px);  /* Viewport se padding minus */
   overflow: hidden;
   display: flex;

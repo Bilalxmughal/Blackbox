@@ -587,10 +587,7 @@ function ComplaintBoard() {
                         {uniqueRoutes.map(r => <option key={r} value={r}>{r}</option>)}
                       </select>
                     </div>
-                    <div className={styles.formGroup}>
-                      <label>Company</label>
-                      <input type="text" value={formData.company} readOnly className={styles.readOnly} placeholder="Auto-filled" />
-                    </div>
+                    
                   </div>
                   {formData.routeName && (
                     <div className={styles.formRow3}>
