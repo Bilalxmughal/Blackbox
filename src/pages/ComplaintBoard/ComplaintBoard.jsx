@@ -418,14 +418,13 @@ function ComplaintBoard() {
 
       if (result.success) {
         // Refresh from Firebase
-        const refreshResult = await getAllComplaints()
-        if (refreshResult.success) {
-          saveComplaints(refreshResult.data)
-        }
+        const complaintWithId = { ...newComplaint, id: result.id || `comp-${Date.now()}` }
+      const updatedComplaints = [complaintWithId, ...complaints]
+      saveComplaints(updatedComplaints)
         
         resetForm()
         setShowAddModal(false)
-        alert('Ticket created successfully in Firebase!')
+        
       } else {
         alert('Error creating ticket: ' + result.error)
       }
