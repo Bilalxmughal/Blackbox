@@ -401,13 +401,8 @@ function ComplaintBoard() {
             <option value="all">All Status</option>
             {Object.values(TICKET_STATUS).map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-        </div>
-        <button className={styles.clearBtn} onClick={() => setFilters({
-          search: '', department: 'all', assignedTo: 'all', status: 'all', company: 'all', dateFrom: '', dateTo: ''
-        })}>Clear</button>
-      </div>
- 
-      <div className={styles.secondaryFilters}>
+
+          <div className={styles.secondaryFilters}>
         <div className={styles.dateFilter}>
           <Calendar size={16} />
           <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({...filters, dateFrom: e.target.value})} />
@@ -422,6 +417,14 @@ function ComplaintBoard() {
           </select>
         </div>
       </div>
+        </div>
+
+        <button className={styles.clearBtn} onClick={() => setFilters({
+          search: '', department: 'all', assignedTo: 'all', status: 'all', company: 'all', dateFrom: '', dateTo: ''
+        })}>Clear</button>
+      </div>
+ 
+      
  
       <div className={styles.tableContainer}>
         <table className={styles.complaintsTable}>
