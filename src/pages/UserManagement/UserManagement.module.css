@@ -523,3 +523,32 @@
     flex-direction: column;
   }
 }
+
+/* Password Reset Toggle */
+.passwordResetToggle {
+  background: #fff3e0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 2px solid #ffe0b2;
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #e65100;
+}
+
+.toggleLabel input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ff9800;
+  cursor: pointer;
+}
+
+/* Full width form group for password */
+.formGroupFull {
+  grid-column: 1 / -1;
+}
