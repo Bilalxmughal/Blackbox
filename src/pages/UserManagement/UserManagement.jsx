@@ -87,14 +87,25 @@ function UserManagement() {
 
     // ✅ STEP 2: Sync from Firebase (REAL FIX)
     try {
-      const res = await getAllUsers()
-      if (res.success && res.data.length > 0) {
-        setUsers(res.data)
-        localStorage.setItem('users', JSON.stringify(res.data))
-      }
-    } catch (err) {
-      console.error("Firebase sync failed:", err)
+  const res = await getAllUsers()
+  if (res.success && res.data.length > 0) {
+    const savedUsers = localStorage.getItem('users')
+    const localUsers = savedUsers ? JSON.parse(savedUsers) : []
+    const localEmails = new Set(localUsers.map(u => u.email?.toLowerCase()))
+    
+    // Sirf wo users add karo jo locally nahi hain
+    const newFromFirebase = res.data.filter(u => !localEmails.has(u.email?.toLowerCase()))
+    
+    if (newFromFirebase.length > 0) {
+      const merged = [...localUsers, ...newFromFirebase]
+      setUsers(merged)
+      localStorage.setItem('users', JSON.stringify(merged))
     }
+    // Agar koi naya nahi toh local data hi use karo
+  }
+} catch (err) {
+  console.error("Firebase sync failed:", err)
+}
   }
 
   loadData()
@@ -218,17 +229,17 @@ function UserManagement() {
 
       // INSTANT: Create user locally first (no waiting)
       const newUser = {
-        id: `user-${Date.now()}`, // Generate local ID
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password || 'password123',
-        department: formData.department,
-        role: formData.role,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        lastLogin: null
-      }
+  id: `user-${Date.now()}`,
+  name: formData.name,
+  email: formData.email,
+  phone: formData.phone,
+  password: formData.password || 'password123', // ← ye theek hai
+  department: formData.department,
+  role: formData.role,
+  status: 'active',
+  createdAt: new Date().toISOString(),
+  lastLogin: null
+}
 
       // Update local state immediately
       const updatedUsers = [...users, newUser]
