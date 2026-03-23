@@ -57,14 +57,19 @@ export const getAllUsers = async () => {
   try {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
-    
-    users.push({ 
-  id: doc.id, 
-  ...doc.data(),
-  createdAt: doc.data().createdAt || new Date().toISOString()
-})
-    
+
+    const users = []; // ✅ IMPORTANT
+
+    querySnapshot.forEach((doc) => {
+      users.push({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt || new Date().toISOString()
+      });
+    });
+
     return { success: true, data: users };
+
   } catch (error) {
     console.error("Error getting users:", error);
     return { success: false, error: error.message };
@@ -77,7 +82,7 @@ export const updateUser = async (userId, updates) => {
     const userRef = doc(db, "users", userId);
     await updateDoc(userRef, {
       ...updates,
-      updatedAt: serverTimestamp()
+      updatedAt: new Date().toISOString()
     });
     return { success: true };
   } catch (error) {
