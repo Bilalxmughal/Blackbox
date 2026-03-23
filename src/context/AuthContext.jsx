@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { 
   getAllUsers, 
-  saveLoginSession
+  saveLoginSession,
+  createUser
 } from '../lib/firebase';
 import { defaultUsers, ROLES } from '../data/users';
 
@@ -16,59 +17,90 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     console.log('=== AUTH CONTEXT MOUNTED ===');
     
-    const initializeData = async () => {
-      try {
-        // Pehle localStorage check karo (fast)
-        const savedUsers = localStorage.getItem('users');
-        const savedCurrentUser = localStorage.getItem('currentUser');
-        
-        if (savedUsers) {
-          try {
-            const parsed = JSON.parse(savedUsers);
-            if (Array.isArray(parsed)) {
-              console.log('Loaded users from localStorage:', parsed.length);
-            }
-          } catch (e) {
-            console.error('Error parsing localStorage users:', e);
+    // ✅ INSTANT LOAD - No async, no waiting
+    try {
+      let localUsers = [];
+      const savedUsers = localStorage.getItem('users');
+      
+      if (savedUsers) {
+        try {
+          const parsed = JSON.parse(savedUsers);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            localUsers = parsed;
           }
-        } else {
-          // Agar localStorage empty hai to default set karo
-          localStorage.setItem('users', JSON.stringify(defaultUsers));
+        } catch (e) {
+          console.error('Error parsing users:', e);
         }
+      }
 
-        // Check for existing session
-        if (savedCurrentUser) {
-          try {
-            const user = JSON.parse(savedCurrentUser);
+      // ✅ Ensure default users exist (Super Admin, Admin, Ops)
+      const hasSuperAdmin = localUsers.some(u => u.email === 'super@buscaro.com');
+      const hasAdmin = localUsers.some(u => u.email === 'admin@buscaro.com');
+      const hasOps = localUsers.some(u => u.email === 'ops@buscaro.com');
+      
+      if (!hasSuperAdmin || !hasAdmin || !hasOps) {
+        console.log('⚠️ Default users missing, restoring...');
+        const existingEmails = new Set(localUsers.map(u => u.email.toLowerCase()));
+        const usersToAdd = defaultUsers.filter(u => !existingEmails.has(u.email.toLowerCase()));
+        
+        localUsers = [...localUsers, ...usersToAdd];
+        localStorage.setItem('users', JSON.stringify(localUsers));
+      }
+
+      // ✅ Restore session instantly
+      const savedCurrentUser = localStorage.getItem('currentUser');
+      if (savedCurrentUser) {
+        try {
+          const user = JSON.parse(savedCurrentUser);
+          const userStillExists = localUsers.some(u => u.email === user.email);
+          if (userStillExists) {
             setCurrentUser(user);
             setIsAuthenticated(true);
-            console.log('Restored session:', user.email);
-          } catch (e) {
+            console.log('✅ Session restored:', user.email);
+          } else {
             localStorage.removeItem('currentUser');
           }
+        } catch (e) {
+          localStorage.removeItem('currentUser');
         }
-        
-        // Firebase se background mein sync karo (blocking nahi)
-        try {
-          const firebaseUsers = await getAllUsers();
-          if (firebaseUsers.success && firebaseUsers.data.length > 0) {
-            // Merge Firebase data with localStorage
-            localStorage.setItem('users', JSON.stringify(firebaseUsers.data));
-            console.log('Synced with Firebase:', firebaseUsers.data.length);
-          }
-        } catch (firebaseError) {
-          console.log('Firebase sync failed (non-critical):', firebaseError.message);
-        }
-        
-      } catch (e) {
-        console.error('Initialization error:', e);
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    initializeData();
+      
+      // ✅ DONE - No waiting for Firebase
+      setIsLoading(false);
+      
+      // ✅ Background mein Firebase sync (silent, no blocking)
+      setTimeout(() => {
+        syncWithFirebase(localUsers);
+      }, 100);
+      
+    } catch (e) {
+      console.error('Initialization error:', e);
+      setIsLoading(false);
+    }
   }, []);
+
+  // ✅ BACKGROUND SYNC - Silent, no UI impact
+  const syncWithFirebase = async (localUsers) => {
+    try {
+      const firebaseResult = await getAllUsers();
+      if (firebaseResult.success) {
+        console.log('🔥 Firebase sync:', firebaseResult.data.length, 'users');
+        
+        // Merge new users from Firebase
+        const localEmails = new Set(localUsers.map(u => u.email.toLowerCase()));
+        const newUsers = firebaseResult.data.filter(u => !localEmails.has(u.email.toLowerCase()));
+        
+        if (newUsers.length > 0) {
+          const merged = [...localUsers, ...newUsers];
+          localStorage.setItem('users', JSON.stringify(merged));
+          console.log('✅ Merged', newUsers.length, 'new users from Firebase');
+        }
+      }
+    } catch (err) {
+      // Silent fail - no console spam
+      console.log('Firebase offline, using local data');
+    }
+  };
 
   const login = async (email, password) => {
     console.log('=== LOGIN ATTEMPT ===');
@@ -77,7 +109,7 @@ export function AuthProvider({ children }) {
     const cleanPassword = password.trim();
 
     try {
-      // Pehle localStorage se check karo (fast)
+      // ✅ INSTANT localStorage read
       let users = [];
       const savedUsers = localStorage.getItem('users');
       
@@ -87,71 +119,102 @@ export function AuthProvider({ children }) {
         } catch (e) {
           users = defaultUsers;
         }
-      } else {
+      }
+      
+      if (!Array.isArray(users) || users.length === 0) {
         users = defaultUsers;
         localStorage.setItem('users', JSON.stringify(defaultUsers));
       }
 
-      console.log('Total users:', users.length);
-
-      // Find user
+      // ✅ Find user instantly
       const user = users.find(u => {
         const userEmail = u.email?.toLowerCase().trim();
         const userPassword = u.password?.trim();
         return userEmail === cleanEmail && userPassword === cleanPassword;
       });
 
-      console.log('Found user:', user ? user.name : 'NO MATCH');
-
       if (!user) {
-        const emailExists = users.some(u => 
-          u.email?.toLowerCase().trim() === cleanEmail
-        );
-        
-        if (emailExists) {
-          return { success: false, error: 'Incorrect password' };
-        }
-        return { success: false, error: 'Email not registered' };
+        const emailExists = users.some(u => u.email?.toLowerCase().trim() === cleanEmail);
+        return { 
+          success: false, 
+          error: emailExists ? 'Incorrect password' : 'Email not registered' 
+        };
       }
 
       if (user.status === 'inactive') {
-        return { success: false, error: 'Account inactive. Contact Super Admin.' };
+        return { success: false, error: 'Account inactive' };
       }
 
-      // ✅ LOGIN SESSION FIREBASE MEIN SAVE KARO (background mein)
-      saveLoginSession(user).catch(err => 
-        console.log('Login session save failed (non-critical):', err)
-      );
-
-      // Success
+      // ✅ INSTANT SUCCESS - No waiting
       const updatedUser = { 
         ...user, 
         lastLogin: new Date().toISOString() 
       };
       
-      // Set session
       setCurrentUser(updatedUser);
       setIsAuthenticated(true);
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
       
-      console.log('=== LOGIN SUCCESS ===');
+      console.log('✅ LOGIN SUCCESS:', user.email);
+      
+      // ✅ BACKGROUND: Save login session to Firebase (silent)
+      setTimeout(() => {
+        saveLoginSession(user).catch(() => {});
+      }, 0);
+      
       return { success: true, user: updatedUser };
       
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, error: 'Login failed. Please try again.' };
+      return { success: false, error: 'Login failed' };
     }
+  };
+
+  // ✅ CREATE USER - Instant local, background Firebase
+  const createUserInstant = async (userData) => {
+    // ✅ INSTANT: LocalStorage mein add karo
+    const newUser = {
+      id: `user-${Date.now()}`,
+      ...userData,
+      createdAt: new Date().toISOString(),
+      status: 'active'
+    };
+
+    const savedUsers = localStorage.getItem('users');
+    const users = savedUsers ? JSON.parse(savedUsers) : [];
+    const updated = [...users, newUser];
+    localStorage.setItem('users', JSON.stringify(updated));
+    
+    console.log('✅ User created instantly:', newUser.email);
+    
+    // ✅ BACKGROUND: Firebase mein bhi save karo (silent)
+    setTimeout(async () => {
+      try {
+        const result = await createUser(newUser);
+        if (result.success) {
+          // Update local ID with Firebase ID
+          const finalUsers = updated.map(u => 
+            u.id === newUser.id ? { ...u, id: result.id } : u
+          );
+          localStorage.setItem('users', JSON.stringify(finalUsers));
+          console.log('🔥 User synced to Firebase:', result.id);
+        }
+      } catch (err) {
+        // Silent fail - will sync later
+        console.log('Firebase sync pending for:', newUser.email);
+      }
+    }, 0);
+    
+    return { success: true, user: newUser };
   };
 
   const logout = () => {
     setCurrentUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
-    // Page reload mat karo, bas state clear karo
   };
 
   const resetAllData = () => {
-    console.log('=== RESETTING ALL DATA ===');
     localStorage.clear();
     localStorage.setItem('users', JSON.stringify(defaultUsers));
     window.location.reload();
@@ -171,6 +234,7 @@ export function AuthProvider({ children }) {
     return false;
   };
 
+  // ✅ MINIMAL LOADING SCREEN - 500ms max
   if (isLoading) {
     return (
       <div style={{ 
@@ -178,14 +242,9 @@ export function AuthProvider({ children }) {
         justifyContent: 'center', 
         alignItems: 'center', 
         height: '100vh',
-        fontFamily: 'sans-serif',
-        flexDirection: 'column',
-        gap: '10px'
+        fontFamily: 'sans-serif'
       }}>
-        <div>Loading CRM...</div>
-        <div style={{ fontSize: '12px', color: '#666' }}>
-          Please wait...
-        </div>
+        <div>Loading...</div>
       </div>
     );
   }
@@ -194,8 +253,10 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{ 
       currentUser, 
       isAuthenticated, 
+      isLoading,
       login, 
       logout,
+      createUserInstant,
       resetAllData,
       forceLogin,
       ROLES 

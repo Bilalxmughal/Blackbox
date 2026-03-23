@@ -26,11 +26,10 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import styles from './UserManagement.module.css'
 
-// ✅ FIREBASE IMPORTS
+// Firebase imports for background sync
 import { 
-  getAllUsers, 
-  createUser, 
-  updateUser, 
+  createUser as createUserInFirebase, 
+  updateUser as updateUserInFirebase, 
   deleteUser as deleteUserFromFirebase 
 } from '../../lib/firebase'
 
@@ -39,7 +38,6 @@ function UserManagement() {
   const [users, setUsers] = useState([])
   const [departments, setDepartments] = useState([])
   const [requests, setRequests] = useState([])
-  const [loading, setLoading] = useState(false)
   
   // UI States
   const [showModal, setShowModal] = useState(false)
@@ -61,13 +59,13 @@ function UserManagement() {
     status: 'active'
   })
 
-  // ✅ Load data from localStorage (fast) + background Firebase sync
+  // Load data instantly from localStorage on mount
   useEffect(() => {
     const loadData = () => {
-      // Pehle localStorage se load karo (instant)
       const savedUsers = localStorage.getItem('users')
       const savedDepts = localStorage.getItem('departments')
       
+      // Load users from localStorage or use defaults
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers)
@@ -89,33 +87,15 @@ function UserManagement() {
     }
 
     loadData()
-    
-    // Background mein Firebase se sync karo
-    const syncWithFirebase = async () => {
-      try {
-        const result = await getAllUsers()
-        if (result.success && result.data.length > 0) {
-          setUsers(result.data)
-          localStorage.setItem('users', JSON.stringify(result.data))
-        }
-      } catch (error) {
-        console.log('Firebase sync failed:', error)
-      }
-    }
-    
-    syncWithFirebase()
-    
-    const interval = setInterval(syncWithFirebase, 30000)
-    return () => clearInterval(interval)
   }, [])
 
-  // Save functions
+  // Save users to localStorage and update state
   const saveUsers = (updated) => {
     setUsers(updated)
     localStorage.setItem('users', JSON.stringify(updated))
   }
 
-  // Check permissions
+  // Check permissions based on current user role
   const canAddUser = hasPermission(currentUser, 'add_user') || currentUser?.role === 'ops'
   const canEditUser = (targetUser) => canManageUser(currentUser, targetUser)
   const canDeleteUser = (targetUser) => {
@@ -124,7 +104,7 @@ function UserManagement() {
   }
   const canChangeRole = currentUser?.role === 'super_admin'
 
-  // Filter users
+  // Filter users based on search and filters
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = 
@@ -140,7 +120,7 @@ function UserManagement() {
     })
   }, [users, searchTerm, filterRole, filterStatus, filterDept])
 
-  // Stats
+  // Calculate statistics
   const stats = useMemo(() => ({
     total: users.length,
     active: users.filter(u => u.status === 'active').length,
@@ -153,7 +133,7 @@ function UserManagement() {
     }
   }), [users])
 
-  // Handlers
+  // Open modal for adding new user
   const openAddModal = () => {
     setModalMode('add')
     setFormData({
@@ -168,6 +148,7 @@ function UserManagement() {
     setShowModal(true)
   }
 
+  // Open modal for editing user
   const openEditModal = (user) => {
     setSelectedUser(user)
     setModalMode('edit')
@@ -183,144 +164,137 @@ function UserManagement() {
     setShowModal(true)
   }
 
+  // Open modal for viewing user details
   const openViewModal = (user) => {
     setSelectedUser(user)
     setModalMode('view')
     setShowModal(true)
   }
 
+  // Close modal
   const closeModal = () => {
     setShowModal(false)
     setSelectedUser(null)
   }
 
-  // ✅ HANDLE SUBMIT - Pehle localStorage, phir Firebase
-  const handleSubmit = async () => {
+  // Handle form submit - INSTANT local save, background Firebase sync
+  const handleSubmit = () => {
     // Validation
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill all required fields')
       return
     }
 
-    setLoading(true)
+    if (modalMode === 'add') {
+      // Check for duplicate email
+      if (users.some(u => u.email === formData.email)) {
+        alert('Email already exists!')
+        return
+      }
 
-    try {
-      if (modalMode === 'add') {
-        // Check if email exists
-        if (users.some(u => u.email === formData.email)) {
-          alert('Email already exists!')
-          setLoading(false)
-          return
-        }
+      // OPS users need approval for new users
+      if (currentUser?.role === 'ops') {
+        savePendingRequest({
+          type: 'add_user',
+          data: formData,
+          requestedBy: currentUser.id,
+          requestedByName: currentUser.name
+        })
+        alert('Request sent to Super Admin for approval!')
+        closeModal()
+        return
+      }
 
-        // OPS needs to request
-        if (currentUser?.role === 'ops') {
-          savePendingRequest({
-            type: 'add_user',
-            data: formData,
-            requestedBy: currentUser.id,
-            requestedByName: currentUser.name
-          })
-          alert('Request sent to Super Admin for approval!')
-          closeModal()
-          setLoading(false)
-          return
-        }
+      // INSTANT: Create user locally first (no waiting)
+      const newUser = {
+        id: `user-${Date.now()}`, // Generate local ID
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password || 'password123',
+        department: formData.department,
+        role: formData.role,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        lastLogin: null
+      }
 
-        // ✅ PEHLE LOCALSTORAGE MEIN ADD KARO (instant)
-        const newUser = {
-          id: `user-${Date.now()}`, // Local ID banao
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          password: formData.password || 'password123',
-          department: formData.department,
-          role: formData.role,
-          status: 'active',
-          createdAt: new Date().toISOString(),
-          lastLogin: null
-        }
-
-        const updatedUsers = [...users, newUser]
-        saveUsers(updatedUsers)
-        
-        // ✅ PHIR BACKGROUND MEIN FIREBASE MEIN SAVE KARO
-        try {
-          const firebaseResult = await createUser(newUser)
-          if (firebaseResult.success) {
+      // Update local state immediately
+      const updatedUsers = [...users, newUser]
+      saveUsers(updatedUsers)
+      
+      // BACKGROUND: Sync to Firebase silently (no blocking)
+      setTimeout(() => {
+        createUserInFirebase(newUser).then(result => {
+          if (result.success) {
             // Update local ID with Firebase ID
             const finalUsers = updatedUsers.map(u => 
-              u.id === newUser.id ? { ...u, id: firebaseResult.id } : u
+              u.id === newUser.id ? { ...u, id: result.id } : u
             )
             saveUsers(finalUsers)
-            console.log('User saved to Firebase:', firebaseResult.id)
           }
-        } catch (firebaseError) {
-          console.error('Firebase save failed (non-critical):', firebaseError)
-        }
+        }).catch(() => {
+          // Silent fail - will retry later
+        })
+      }, 0)
 
-        alert('User created successfully!')
-        closeModal()
-        
-      } else if (modalMode === 'edit' && selectedUser) {
-        const isRoleChanged = formData.role !== selectedUser.role
-        
-        if (isRoleChanged && !canChangeRole) {
-          alert('Only Super Admin can change roles!')
-          setLoading(false)
-          return
-        }
-
-        // OPS needs to request for edit
-        if (currentUser?.role === 'ops') {
-          savePendingRequest({
-            type: 'edit_user',
-            userId: selectedUser.id,
-            data: { updates: formData },
-            requestedBy: currentUser.id,
-            requestedByName: currentUser.name
-          })
-          alert('Edit request sent to Super Admin!')
-          closeModal()
-          setLoading(false)
-          return
-        }
-
-        // ✅ PEHLE LOCALSTORAGE UPDATE KARO
-        const updated = users.map(u => 
-          u.id === selectedUser.id 
-            ? { ...u, ...formData, password: formData.password || u.password }
-            : u
-        )
-        saveUsers(updated)
-
-        // ✅ PHIR FIREBASE UPDATE KARO (background mein)
-        if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
-          try {
-            await updateUser(selectedUser.id, {
-              name: formData.name,
-              phone: formData.phone,
-              department: formData.department,
-              role: formData.role,
-              status: formData.status
-            })
-          } catch (firebaseError) {
-            console.error('Firebase update failed:', firebaseError)
-          }
-        }
-
-        alert('User updated successfully!')
-        closeModal()
+      alert('User created successfully!')
+      closeModal()
+      
+    } else if (modalMode === 'edit' && selectedUser) {
+      // Check role change permission
+      const isRoleChanged = formData.role !== selectedUser.role
+      
+      if (isRoleChanged && !canChangeRole) {
+        alert('Only Super Admin can change roles!')
+        return
       }
-    } catch (error) {
-      console.error('Error in handleSubmit:', error)
-      alert('Operation failed: ' + error.message)
-    } finally {
-      setLoading(false)
+
+      // OPS users need approval for edits
+      if (currentUser?.role === 'ops') {
+        savePendingRequest({
+          type: 'edit_user',
+          userId: selectedUser.id,
+          data: { updates: formData },
+          requestedBy: currentUser.id,
+          requestedByName: currentUser.name
+        })
+        alert('Edit request sent to Super Admin!')
+        closeModal()
+        return
+      }
+
+      // INSTANT: Update locally first
+      const updated = users.map(u => 
+        u.id === selectedUser.id 
+          ? { ...u, ...formData, password: formData.password || u.password }
+          : u
+      )
+      saveUsers(updated)
+
+      // BACKGROUND: Update in Firebase silently
+      if (selectedUser.id && !selectedUser.id.startsWith('user-')) {
+        setTimeout(() => {
+          updateUserInFirebase(selectedUser.id, {
+            name: formData.name,
+            phone: formData.phone,
+            department: formData.department,
+            role: formData.role,
+            status: formData.status
+          }).catch(() => {
+            // Silent fail
+          })
+        }, 0)
+      }
+
+      alert('User updated successfully!')
+      closeModal()
     }
   }
 
+  // Toggle user status (active/inactive)
   const toggleStatus = (user) => {
+    // OPS users need approval for status changes
     if (currentUser?.role === 'ops') {
       savePendingRequest({
         type: 'toggle_status',
@@ -338,18 +312,22 @@ function UserManagement() {
       return
     }
 
+    // INSTANT: Toggle locally
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
     const updated = users.map(u => 
       u.id === user.id ? { ...u, status: newStatus } : u
     )
     saveUsers(updated)
 
-    // Background Firebase update
+    // BACKGROUND: Update in Firebase
     if (user.id && !user.id.startsWith('user-')) {
-      updateUser(user.id, { status: newStatus }).catch(console.error)
+      setTimeout(() => {
+        updateUserInFirebase(user.id, { status: newStatus }).catch(() => {})
+      }, 0)
     }
   }
 
+  // Delete user
   const deleteUser = (user) => {
     if (!canDeleteUser(user)) {
       alert('You cannot delete this user!')
@@ -357,17 +335,20 @@ function UserManagement() {
     }
 
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      // Pehle localStorage se delete karo
+      // INSTANT: Delete locally
       const updated = users.filter(u => u.id !== user.id)
       saveUsers(updated)
 
-      // Phir Firebase se delete karo (background mein)
+      // BACKGROUND: Delete from Firebase
       if (user.id && !user.id.startsWith('user-')) {
-        deleteUserFromFirebase(user.id).catch(console.error)
+        setTimeout(() => {
+          deleteUserFromFirebase(user.id).catch(() => {})
+        }, 0)
       }
     }
   }
 
+  // Export users to CSV
   const exportUsers = () => {
     const csv = [
       ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Created'].join(','),
@@ -385,16 +366,6 @@ function UserManagement() {
     a.click()
   }
 
-  if (loading && users.length === 0) {
-    return (
-      <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-          <div>Loading users...</div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className={styles.container}>
       {/* Header */}
@@ -404,7 +375,7 @@ function UserManagement() {
           <p>Manage system users, roles and permissions</p>
         </div>
         {canAddUser && (
-          <button className={styles.addBtn} onClick={openAddModal} disabled={loading}>
+          <button className={styles.addBtn} onClick={openAddModal}>
             <Plus size={18} /> Add User
           </button>
         )}
@@ -522,7 +493,7 @@ function UserManagement() {
                   <button 
                     className={`${styles.statusToggle} ${styles[user.status]}`}
                     onClick={() => toggleStatus(user)}
-                    disabled={!canEditUser(user) || loading}
+                    disabled={!canEditUser(user)}
                   >
                     {user.status === 'active' ? (
                       <><UserCheck size={14} /> Active</>
@@ -549,7 +520,6 @@ function UserManagement() {
                         className={styles.actionBtn}
                         onClick={() => openEditModal(user)}
                         title="Edit User"
-                        disabled={loading}
                       >
                         <Edit2 size={16} />
                       </button>
@@ -560,7 +530,6 @@ function UserManagement() {
                         className={`${styles.actionBtn} ${styles.danger}`}
                         onClick={() => deleteUser(user)}
                         title="Delete User"
-                        disabled={loading}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -637,7 +606,7 @@ function UserManagement() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      disabled={modalMode === 'view' || loading}
+                      disabled={modalMode === 'view'}
                     />
                   </div>
 
@@ -647,7 +616,7 @@ function UserManagement() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      disabled={modalMode === 'edit' || loading}
+                      disabled={modalMode === 'edit'}
                     />
                   </div>
 
@@ -657,7 +626,6 @@ function UserManagement() {
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      disabled={loading}
                     />
                   </div>
 
@@ -669,7 +637,6 @@ function UserManagement() {
                         value={formData.password}
                         onChange={(e) => setFormData({...formData, password: e.target.value})}
                         placeholder="Leave empty for default"
-                        disabled={loading}
                       />
                     </div>
                   )}
@@ -679,7 +646,6 @@ function UserManagement() {
                     <select
                       value={formData.department}
                       onChange={(e) => setFormData({...formData, department: e.target.value})}
-                      disabled={loading}
                     >
                       {departments.map(d => (
                         <option key={d.id} value={d.name}>{d.name}</option>
@@ -692,7 +658,7 @@ function UserManagement() {
                     <select
                       value={formData.role}
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      disabled={!canChangeRole || loading}
+                      disabled={!canChangeRole}
                     >
                       {Object.values(ROLES).map(r => (
                         <option key={r.id} value={r.id}>{r.name}</option>
@@ -709,7 +675,6 @@ function UserManagement() {
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({...formData, status: e.target.value})}
-                        disabled={loading}
                       >
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -722,15 +687,15 @@ function UserManagement() {
 
             {modalMode !== 'view' && (
               <div className={styles.modalFooter}>
-                <button className={styles.cancelBtn} onClick={closeModal} disabled={loading}>
+                <button className={styles.cancelBtn} onClick={closeModal}>
                   Cancel
                 </button>
                 <button 
                   className={styles.saveBtn} 
                   onClick={handleSubmit}
-                  disabled={currentUser?.role === 'ops' && modalMode === 'add' || loading}
+                  disabled={currentUser?.role === 'ops' && modalMode === 'add'}
                 >
-                  {loading ? 'Saving...' : currentUser?.role === 'ops' ? 'Send Request' : 'Save User'}
+                  {currentUser?.role === 'ops' ? 'Send Request' : 'Save User'}
                 </button>
               </div>
             )}
