@@ -61,47 +61,44 @@ function UserManagement() {
     status: 'active'
   })
 
+  // Load data instantly from localStorage on mount
   useEffect(() => {
-  const loadFirebaseUsers = async () => {
-    const res = await getAllUsers()
-    if (res.success && res.data.length > 0) {
-      setUsers(res.data)
-      localStorage.setItem('users', JSON.stringify(res.data))
+  const loadData = async () => {
+    const savedUsers = localStorage.getItem('users')
+    const savedDepts = localStorage.getItem('departments')
+
+    // ✅ STEP 1: Load from localStorage first (fast UI)
+    if (savedUsers) {
+      try {
+        const parsed = JSON.parse(savedUsers)
+        if (Array.isArray(parsed)) {
+          setUsers(parsed)
+        }
+      } catch (e) {
+        console.error('Error parsing users:', e)
+        setUsers(defaultUsers)
+      }
+    } else {
+      setUsers(defaultUsers)
+    }
+
+    setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
+    setRequests(getPendingRequests())
+
+    // ✅ STEP 2: Sync from Firebase (REAL FIX)
+    try {
+      const res = await getAllUsers()
+      if (res.success && res.data.length > 0) {
+        setUsers(res.data)
+        localStorage.setItem('users', JSON.stringify(res.data))
+      }
+    } catch (err) {
+      console.error("Firebase sync failed:", err)
     }
   }
 
-  loadFirebaseUsers()
+  loadData()
 }, [])
-
-  // Load data instantly from localStorage on mount
-  useEffect(() => {
-    const loadData = () => {
-      const savedUsers = localStorage.getItem('users')
-      const savedDepts = localStorage.getItem('departments')
-      
-      // Load users from localStorage or use defaults
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers)
-          if (Array.isArray(parsed)) {
-            setUsers(parsed)
-          }
-        } catch (e) {
-          console.error('Error parsing users:', e)
-          setUsers(defaultUsers)
-          localStorage.setItem('users', JSON.stringify(defaultUsers))
-        }
-      } else {
-        setUsers(defaultUsers)
-        localStorage.setItem('users', JSON.stringify(defaultUsers))
-      }
-      
-      setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
-      setRequests(getPendingRequests())
-    }
-
-    loadData()
-  }, [])
 
   // Save users to localStorage and update state
   const saveUsers = (updated) => {
@@ -289,10 +286,10 @@ function UserManagement() {
         department: formData.department,
         role: formData.role,
         status: formData.status,
+        ...(formData.resetPassword && formData.password && { password: formData.password })
       }
     : u
 )
-
 saveUsers(updated)
 
       // BACKGROUND: Update in Firebase silently
@@ -300,7 +297,7 @@ saveUsers(updated)
   setTimeout(() => {
     const firebaseUpdates = {
       name: formData.name,
-      email: formData.email, 
+      email: formData.email,
       phone: formData.phone,
       department: formData.department,
       role: formData.role,
@@ -641,10 +638,10 @@ saveUsers(updated)
                   <div className={styles.formGroup}>
                     <label>Email *</label>
                     <input
-  type="email"
-  value={formData.email}
-  onChange={(e) => setFormData({...formData, email: e.target.value})}
-/>
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    />
                   </div>
 
                   <div className={styles.formGroup}>
