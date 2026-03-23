@@ -271,11 +271,11 @@ function UserManagement() {
     ? { 
         ...u, 
         name: formData.name,
+        email: formData.email,   
         phone: formData.phone,
         department: formData.department,
         role: formData.role,
         status: formData.status,
-        // ✅ SIRF JAB RESET CHECKED HO TAB PASSWORD UPDATE KARO
         ...(formData.resetPassword && formData.password && { password: formData.password })
       }
     : u
@@ -287,6 +287,7 @@ saveUsers(updated)
   setTimeout(() => {
     const firebaseUpdates = {
       name: formData.name,
+      email: formData.email, 
       phone: formData.phone,
       department: formData.department,
       role: formData.role,
@@ -630,7 +631,6 @@ saveUsers(updated)
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      disabled={modalMode === 'edit'}
                     />
                   </div>
 
