@@ -14,7 +14,6 @@ import {
 } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
 
-// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyB5rNil6KZW2kaye5-bRoVhKM3z5UCOVTg",
   authDomain: "buscaro-crm.firebaseapp.com",
@@ -25,16 +24,15 @@ const firebaseConfig = {
   measurementId: "G-DBMZ1LLV3M"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 // ==========================================
-// USERS COLLECTION FUNCTIONS
+// USERS
 // ==========================================
 
-// 1. USER CREATE/SAVE KARNA
+// Create a new user document in Firebase
 export const createUser = async (userData) => {
   try {
     const userWithTimestamp = {
@@ -42,9 +40,8 @@ export const createUser = async (userData) => {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
-    
     const docRef = await addDoc(collection(db, "users"), userWithTimestamp);
-    console.log("User created with ID:", docRef.id);
+    console.log("User created with Firebase ID:", docRef.id);
     return { success: true, id: docRef.id, data: userWithTimestamp };
   } catch (error) {
     console.error("Error creating user:", error);
@@ -52,14 +49,12 @@ export const createUser = async (userData) => {
   }
 };
 
-// 2. SAARE USERS GET KARNA
+// Get all users from Firebase
 export const getAllUsers = async () => {
   try {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
-
-    const users = []; // ✅ IMPORTANT
-
+    const users = [];
     querySnapshot.forEach((doc) => {
       users.push({
         id: doc.id,
@@ -67,16 +62,35 @@ export const getAllUsers = async () => {
         createdAt: doc.data().createdAt || new Date().toISOString()
       });
     });
-
     return { success: true, data: users };
-
   } catch (error) {
     console.error("Error getting users:", error);
     return { success: false, error: error.message };
   }
 };
 
-// 3. USER UPDATE KARNA
+// ✅ NEW: Find a user's Firebase document ID by their email address
+// Used as fallback when firebaseId is not stored locally
+export const getUserByEmail = async (email) => {
+  try {
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email.toLowerCase().trim())
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+      console.warn("No Firebase document found for email:", email);
+      return { success: false, error: "User not found" };
+    }
+    const docSnap = snapshot.docs[0];
+    return { success: true, id: docSnap.id, data: docSnap.data() };
+  } catch (error) {
+    console.error("Error finding user by email:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Update an existing user document in Firebase
 export const updateUser = async (userId, updates) => {
   try {
     const userRef = doc(db, "users", userId);
@@ -91,7 +105,7 @@ export const updateUser = async (userId, updates) => {
   }
 };
 
-// ✅ 4. USER DELETE KARNA - YE FUNCTION MISSING THA!
+// Delete a user document from Firebase
 export const deleteUser = async (userId) => {
   try {
     await deleteDoc(doc(db, "users", userId));
@@ -104,10 +118,10 @@ export const deleteUser = async (userId) => {
 };
 
 // ==========================================
-// LOGIN SESSIONS COLLECTION
+// LOGIN SESSIONS
 // ==========================================
 
-// 5. LOGIN SESSION SAVE KARNA
+// Save a login session record
 export const saveLoginSession = async (userData) => {
   try {
     const sessionData = {
@@ -120,7 +134,6 @@ export const saveLoginSession = async (userData) => {
       ipAddress: "",
       userAgent: typeof window !== 'undefined' ? navigator.userAgent : ''
     };
-    
     const docRef = await addDoc(collection(db, "loginSessions"), sessionData);
     return { success: true, id: docRef.id };
   } catch (error) {
@@ -129,26 +142,24 @@ export const saveLoginSession = async (userData) => {
   }
 };
 
-// 6. SAARI LOGIN HISTORY GET KARNA
+// Get login history — all users or filtered by userId
 export const getLoginHistory = async (userId = null) => {
   try {
     let q;
     if (userId) {
       q = query(
-        collection(db, "loginSessions"), 
+        collection(db, "loginSessions"),
         where("userId", "==", userId),
         orderBy("loginTime", "desc")
       );
     } else {
       q = query(collection(db, "loginSessions"), orderBy("loginTime", "desc"));
     }
-    
     const querySnapshot = await getDocs(q);
     const sessions = [];
     querySnapshot.forEach((doc) => {
       sessions.push({ id: doc.id, ...doc.data() });
     });
-    
     return { success: true, data: sessions };
   } catch (error) {
     console.error("Error getting login history:", error);
@@ -157,10 +168,10 @@ export const getLoginHistory = async (userId = null) => {
 };
 
 // ==========================================
-// COMPLAINTS/TICKETS COLLECTION
+// COMPLAINTS
 // ==========================================
 
-// 7. COMPLAINT CREATE KARNA
+// Create a new complaint document
 export const createComplaint = async (complaintData) => {
   try {
     const complaintWithMeta = {
@@ -170,9 +181,7 @@ export const createComplaint = async (complaintData) => {
       status: complaintData.status || 'Open',
       resolvedPercent: 0
     };
-    
     const docRef = await addDoc(collection(db, "complaints"), complaintWithMeta);
-    console.log("Complaint created with ID:", docRef.id);
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error("Error creating complaint:", error);
@@ -180,17 +189,15 @@ export const createComplaint = async (complaintData) => {
   }
 };
 
-// 8. SAARI COMPLAINTS GET KARNA
+// Get all complaints
 export const getAllComplaints = async () => {
   try {
     const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
-    
     const complaints = [];
     querySnapshot.forEach((doc) => {
       complaints.push({ id: doc.id, ...doc.data() });
     });
-    
     return { success: true, data: complaints };
   } catch (error) {
     console.error("Error getting complaints:", error);
@@ -198,7 +205,7 @@ export const getAllComplaints = async () => {
   }
 };
 
-// 9. SPECIFIC USER KI COMPLAINTS GET KARNA
+// Get complaints submitted by a specific user
 export const getUserComplaints = async (userId) => {
   try {
     const q = query(
@@ -206,13 +213,11 @@ export const getUserComplaints = async (userId) => {
       where("submittedById", "==", userId),
       orderBy("createdAt", "desc")
     );
-    
     const querySnapshot = await getDocs(q);
     const complaints = [];
     querySnapshot.forEach((doc) => {
       complaints.push({ id: doc.id, ...doc.data() });
     });
-    
     return { success: true, data: complaints };
   } catch (error) {
     console.error("Error getting user complaints:", error);
@@ -220,14 +225,11 @@ export const getUserComplaints = async (userId) => {
   }
 };
 
-// 10. COMPLAINT UPDATE KARNA
+// Update a complaint document
 export const updateComplaint = async (complaintId, updates) => {
   try {
     const complaintRef = doc(db, "complaints", complaintId);
-    await updateDoc(complaintRef, {
-      ...updates,
-      updatedAt: serverTimestamp()
-    });
+    await updateDoc(complaintRef, { ...updates, updatedAt: serverTimestamp() });
     return { success: true };
   } catch (error) {
     console.error("Error updating complaint:", error);
@@ -235,22 +237,16 @@ export const updateComplaint = async (complaintId, updates) => {
   }
 };
 
-// 11. COMMENT ADD KARNA
+// Add a comment to a complaint's subcollection
 export const addCommentToComplaint = async (complaintId, commentData) => {
   try {
-    const commentWithMeta = {
-      ...commentData,
-      createdAt: serverTimestamp()
-    };
-    
+    const commentWithMeta = { ...commentData, createdAt: serverTimestamp() };
     const commentsRef = collection(db, "complaints", complaintId, "comments");
     const docRef = await addDoc(commentsRef, commentWithMeta);
-    
     await updateDoc(doc(db, "complaints", complaintId), {
       updatedAt: serverTimestamp(),
       lastCommentAt: serverTimestamp()
     });
-    
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error("Error adding comment:", error);
@@ -258,20 +254,18 @@ export const addCommentToComplaint = async (complaintId, commentData) => {
   }
 };
 
-// 12. COMPLAINT KI SAARE COMMENTS GET KARNA
+// Get all comments for a complaint
 export const getComplaintComments = async (complaintId) => {
   try {
     const q = query(
       collection(db, "complaints", complaintId, "comments"),
       orderBy("createdAt", "asc")
     );
-    
     const querySnapshot = await getDocs(q);
     const comments = [];
     querySnapshot.forEach((doc) => {
       comments.push({ id: doc.id, ...doc.data() });
     });
-    
     return { success: true, data: comments };
   } catch (error) {
     console.error("Error getting comments:", error);
