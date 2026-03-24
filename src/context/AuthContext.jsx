@@ -13,11 +13,8 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize data on mount
+  // Initialize auth state on app mount
   useEffect(() => {
-    console.log('=== AUTH CONTEXT MOUNTED ===');
-    
-    // ✅ INSTANT LOAD - No async, no waiting
     try {
       let localUsers = [];
       const savedUsers = localStorage.getItem('users');
@@ -25,29 +22,25 @@ export function AuthProvider({ children }) {
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            localUsers = parsed;
-          }
+          if (Array.isArray(parsed) && parsed.length > 0) localUsers = parsed;
         } catch (e) {
           console.error('Error parsing users:', e);
         }
       }
 
-      // ✅ Ensure default users exist (Super Admin, Admin, Ops)
+      // Ensure default users exist — restore any that are missing
       const hasSuperAdmin = localUsers.some(u => u.email === 'super@buscaro.com');
       const hasAdmin = localUsers.some(u => u.email === 'admin@buscaro.com');
       const hasOps = localUsers.some(u => u.email === 'ops@buscaro.com');
       
       if (!hasSuperAdmin || !hasAdmin || !hasOps) {
-        console.log('⚠️ Default users missing, restoring...');
         const existingEmails = new Set(localUsers.map(u => u.email.toLowerCase()));
         const usersToAdd = defaultUsers.filter(u => !existingEmails.has(u.email.toLowerCase()));
-        
         localUsers = [...localUsers, ...usersToAdd];
         localStorage.setItem('users', JSON.stringify(localUsers));
       }
 
-      // ✅ Restore session instantly
+      // Restore session from localStorage if user still exists
       const savedCurrentUser = localStorage.getItem('currentUser');
       if (savedCurrentUser) {
         try {
@@ -56,7 +49,6 @@ export function AuthProvider({ children }) {
           if (userStillExists) {
             setCurrentUser(user);
             setIsAuthenticated(true);
-            console.log('✅ Session restored:', user.email);
           } else {
             localStorage.removeItem('currentUser');
           }
@@ -65,10 +57,9 @@ export function AuthProvider({ children }) {
         }
       }
       
-      // ✅ DONE - No waiting for Firebase
       setIsLoading(false);
       
-      // ✅ Background mein Firebase sync (silent, no blocking)
+      // Background Firebase sync after UI is ready
       setTimeout(() => {
         syncWithFirebase(localUsers);
       }, 100);
@@ -79,46 +70,57 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // ✅ BACKGROUND SYNC - Silent, no UI impact
+  // ✅ Background sync — adds new Firebase users and stores firebaseId on existing users
+  // Never overwrites local passwords
   const syncWithFirebase = async (localUsers) => {
     try {
       const firebaseResult = await getAllUsers();
-      if (firebaseResult.success) {
-        console.log('🔥 Firebase sync:', firebaseResult.data.length, 'users');
-        
-        // Merge new users from Firebase
-        const localEmails = new Set(localUsers.map(u => u.email.toLowerCase()));
-        const newUsers = firebaseResult.data.filter(u => !localEmails.has(u.email.toLowerCase()));
-        
-        if (newUsers.length > 0) {
-          const merged = [...localUsers, ...newUsers];
-          localStorage.setItem('users', JSON.stringify(merged));
-          console.log('✅ Merged', newUsers.length, 'new users from Firebase');
+      if (!firebaseResult.success) return;
+
+      const firebaseUsers = firebaseResult.data;  // each has id = Firebase doc ID
+      let updated = [...localUsers];
+      let changed = false;
+
+      firebaseUsers.forEach(fbUser => {
+        const localIndex = updated.findIndex(
+          u => u.email?.toLowerCase() === fbUser.email?.toLowerCase()
+        );
+
+        if (localIndex !== -1) {
+          // User exists — store Firebase doc ID if not already present
+          if (!updated[localIndex].firebaseId) {
+            updated[localIndex] = { ...updated[localIndex], firebaseId: fbUser.id };
+            changed = true;
+          }
+        } else {
+          // New user from Firebase not in localStorage
+          updated.push({ ...fbUser, firebaseId: fbUser.id });
+          changed = true;
         }
+      });
+
+      if (changed) {
+        localStorage.setItem('users', JSON.stringify(updated));
+        console.log('Firebase sync complete — firebaseIds stored');
       }
+
     } catch (err) {
-      // Silent fail - no console spam
       console.log('Firebase offline, using local data');
     }
   };
 
+  // Authenticate user against localStorage
   const login = async (email, password) => {
-    console.log('=== LOGIN ATTEMPT ===');
-    
     const cleanEmail = email.toLowerCase().trim();
     const cleanPassword = password.trim();
 
     try {
-      // ✅ INSTANT localStorage read
       let users = [];
       const savedUsers = localStorage.getItem('users');
       
       if (savedUsers) {
-        try {
-          users = JSON.parse(savedUsers);
-        } catch (e) {
-          users = defaultUsers;
-        }
+        try { users = JSON.parse(savedUsers); }
+        catch (e) { users = defaultUsers; }
       }
       
       if (!Array.isArray(users) || users.length === 0) {
@@ -126,11 +128,9 @@ export function AuthProvider({ children }) {
         localStorage.setItem('users', JSON.stringify(defaultUsers));
       }
 
-      // ✅ Find user instantly
       const user = users.find(u => {
-        const userEmail = u.email?.toLowerCase().trim();
-        const userPassword = u.password?.trim();
-        return userEmail === cleanEmail && userPassword === cleanPassword;
+        return u.email?.toLowerCase().trim() === cleanEmail &&
+               u.password?.trim() === cleanPassword;
       });
 
       if (!user) {
@@ -145,22 +145,13 @@ export function AuthProvider({ children }) {
         return { success: false, error: 'Account inactive' };
       }
 
-      // ✅ INSTANT SUCCESS - No waiting
-      const updatedUser = { 
-        ...user, 
-        lastLogin: new Date().toISOString() 
-      };
-      
+      const updatedUser = { ...user, lastLogin: new Date().toISOString() };
       setCurrentUser(updatedUser);
       setIsAuthenticated(true);
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
       
-      console.log('✅ LOGIN SUCCESS:', user.email);
-      
-      // ✅ BACKGROUND: Save login session to Firebase (silent)
-      setTimeout(() => {
-        saveLoginSession(user).catch(() => {});
-      }, 0);
+      // Background: save login session to Firebase
+      setTimeout(() => { saveLoginSession(user).catch(() => {}); }, 0);
       
       return { success: true, user: updatedUser };
       
@@ -170,46 +161,35 @@ export function AuthProvider({ children }) {
     }
   };
 
-  // ✅ CREATE USER - Instant local, background Firebase
+  // Create user locally first, then sync to Firebase
   const createUserInstant = async (userData) => {
-    // ✅ INSTANT: LocalStorage mein add karo
     const newUser = {
-    id: `user-${Date.now()}`,
-    ...userData,
-    createdAt: new Date().toISOString(),
-    status: 'active'
-  };
-
-
-    const savedUsers = localStorage.getItem('users');
-  const users = savedUsers ? JSON.parse(savedUsers) : [];
-  const updated = [...users, newUser];
-  localStorage.setItem('users', JSON.stringify(updated));
-
-  console.log('✅ User created instantly:', newUser.email);
-    
-    // ✅ BACKGROUND: Firebase mein bhi save karo (silent)
-    setTimeout(async () => {
-  try {
-    const firebaseUser = {
-      ...newUser,
-      password: newUser.password || '123456' // default password agar missing ho
+      id: `user-${Date.now()}`,
+      ...userData,
+      createdAt: new Date().toISOString(),
+      status: 'active'
     };
 
-    const result = await createUser(firebaseUser);
-
-    if (result.success) {
-      // LocalStorage me Firebase ID update
-      const finalUsers = updated.map(u => 
-        u.id === newUser.id ? { ...u, id: result.id } : u
-      );
-      localStorage.setItem('users', JSON.stringify(finalUsers));
-      console.log('🔥 User synced to Firebase:', result.id);
-    }
-  } catch (err) {
-    console.log('Firebase sync pending for:', newUser.email);
-  }
-}, 0);
+    const savedUsers = localStorage.getItem('users');
+    const users = savedUsers ? JSON.parse(savedUsers) : [];
+    const updated = [...users, newUser];
+    localStorage.setItem('users', JSON.stringify(updated));
+    
+    // Background: sync to Firebase and store firebaseId
+    setTimeout(async () => {
+      try {
+        const result = await createUser({ ...newUser, password: newUser.password || '123456' });
+        if (result.success) {
+          const finalUsers = updated.map(u => 
+            u.id === newUser.id ? { ...u, firebaseId: result.id } : u
+          );
+          localStorage.setItem('users', JSON.stringify(finalUsers));
+          console.log('User synced to Firebase:', result.id);
+        }
+      } catch (err) {
+        console.log('Firebase sync pending for:', newUser.email);
+      }
+    }, 0);
     
     return { success: true, user: newUser };
   };
@@ -230,7 +210,6 @@ export function AuthProvider({ children }) {
     const savedUsers = localStorage.getItem('users');
     const users = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
     const user = users.find(u => u.email?.toLowerCase().trim() === email.toLowerCase().trim());
-    
     if (user) {
       setCurrentUser(user);
       setIsAuthenticated(true);
@@ -240,16 +219,9 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-  // ✅ MINIMAL LOADING SCREEN - 500ms max
   if (isLoading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        fontFamily: 'sans-serif'
-      }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
         <div>Loading...</div>
       </div>
     );
@@ -257,15 +229,9 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{ 
-      currentUser, 
-      isAuthenticated, 
-      isLoading,
-      login, 
-      logout,
-      createUserInstant,
-      resetAllData,
-      forceLogin,
-      ROLES 
+      currentUser, isAuthenticated, isLoading,
+      login, logout, createUserInstant,
+      resetAllData, forceLogin, ROLES 
     }}>
       {children}
     </AuthContext.Provider>
@@ -274,8 +240,6 @@ export function AuthProvider({ children }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };

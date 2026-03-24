@@ -23,7 +23,6 @@ function UserManagement() {
   const [departments, setDepartments] = useState([])
   const [requests, setRequests] = useState([])
   
-  // UI States
   const [showModal, setShowModal] = useState(false)
   const [modalMode, setModalMode] = useState('add')
   const [selectedUser, setSelectedUser] = useState(null)
@@ -32,50 +31,73 @@ function UserManagement() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterDept, setFilterDept] = useState('all')
   
-  // Form State
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', password: '',
     department: '', role: 'user', status: 'active'
   })
 
-  // Load users from localStorage first, then merge new users from Firebase
+  // Load from localStorage first, then sync firebaseId from Firebase
   useEffect(() => {
     const loadData = async () => {
       const savedUsers = localStorage.getItem('users')
       const savedDepts = localStorage.getItem('departments')
 
-      // Step 1: Load from localStorage immediately for fast UI
+      // Step 1: Load localStorage immediately
+      let localUsers = []
       if (savedUsers) {
         try {
           const parsed = JSON.parse(savedUsers)
-          if (Array.isArray(parsed)) setUsers(parsed)
+          if (Array.isArray(parsed)) {
+            localUsers = parsed
+            setUsers(parsed)
+          }
         } catch (e) {
-          console.error('Error parsing users:', e)
           setUsers(defaultUsers)
+          localUsers = defaultUsers
         }
       } else {
         setUsers(defaultUsers)
+        localUsers = defaultUsers
       }
 
       setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
       setRequests(getPendingRequests())
 
-      // Step 2: Sync from Firebase — only ADD new users, never overwrite local data
-      // This preserves passwords stored locally
+      // Step 2: Sync from Firebase
+      // ✅ KEY FIX: Match local users by email and store their Firebase doc ID as firebaseId
+      // This is what makes edit/delete/password-reset work correctly in Firebase
       try {
         const res = await getAllUsers()
         if (res.success && res.data.length > 0) {
-          const currentLocal = localStorage.getItem('users')
-          const localUsers = currentLocal ? JSON.parse(currentLocal) : []
-          const localEmails = new Set(localUsers.map(u => u.email?.toLowerCase()))
+          const firebaseUsers = res.data  // each has id = Firebase doc ID
 
-          // Only bring in users that don't exist locally
-          const newFromFirebase = res.data.filter(u => !localEmails.has(u.email?.toLowerCase()))
+          let updated = [...localUsers]
+          let changed = false
 
-          if (newFromFirebase.length > 0) {
-            const merged = [...localUsers, ...newFromFirebase]
-            setUsers(merged)
-            localStorage.setItem('users', JSON.stringify(merged))
+          firebaseUsers.forEach(fbUser => {
+            const localIndex = updated.findIndex(
+              u => u.email?.toLowerCase() === fbUser.email?.toLowerCase()
+            )
+
+            if (localIndex !== -1) {
+              // User exists locally — store their Firebase doc ID if not already stored
+              if (!updated[localIndex].firebaseId) {
+                updated[localIndex] = { 
+                  ...updated[localIndex], 
+                  firebaseId: fbUser.id  // ← Firebase doc ID stored here
+                }
+                changed = true
+              }
+            } else {
+              // New user from Firebase not in localStorage — add them
+              updated.push({ ...fbUser, firebaseId: fbUser.id })
+              changed = true
+            }
+          })
+
+          if (changed) {
+            setUsers(updated)
+            localStorage.setItem('users', JSON.stringify(updated))
           }
         }
       } catch (err) {
@@ -92,20 +114,18 @@ function UserManagement() {
     localStorage.setItem('users', JSON.stringify(updated))
   }
 
-  // ✅ Get the correct Firebase document ID for a user
-  // Users created in Firebase get a firebaseId stored alongside local id
+  // Returns Firebase doc ID — prefers firebaseId, falls back to id
   const getFirebaseId = (user) => user.firebaseId || user.id
 
-  // ✅ Update currentUser in localStorage if the edited user is the logged-in user
-  // This prevents session mismatch / auto-logout
+  // If the edited user is the currently logged-in user, refresh their session
+  // This prevents auto-logout caused by stale data in localStorage
   const syncCurrentUserSession = (updatedUser) => {
     const session = localStorage.getItem('currentUser')
     if (!session) return
     try {
       const sessionUser = JSON.parse(session)
       if (sessionUser.id === updatedUser.id || sessionUser.email === updatedUser.email) {
-        const refreshed = { ...sessionUser, ...updatedUser }
-        localStorage.setItem('currentUser', JSON.stringify(refreshed))
+        localStorage.setItem('currentUser', JSON.stringify({ ...sessionUser, ...updatedUser }))
       }
     } catch (e) {}
   }
@@ -119,7 +139,7 @@ function UserManagement() {
   }
   const canChangeRole = currentUser?.role === 'super_admin'
 
-  // Filter users based on search term and selected filters
+  // Filter users by search and dropdowns
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = 
@@ -133,7 +153,7 @@ function UserManagement() {
     })
   }, [users, searchTerm, filterRole, filterStatus, filterDept])
 
-  // Calculate user statistics for the stats cards
+  // Stats for the header cards
   const stats = useMemo(() => ({
     total: users.length,
     active: users.filter(u => u.status === 'active').length,
@@ -146,7 +166,7 @@ function UserManagement() {
     }
   }), [users])
 
-  // Open modal in Add mode with empty form
+  // Open Add modal with blank form
   const openAddModal = () => {
     setModalMode('add')
     setFormData({
@@ -157,7 +177,7 @@ function UserManagement() {
     setShowModal(true)
   }
 
-  // Open modal in Edit mode with selected user's data pre-filled
+  // Open Edit modal pre-filled with user data
   const openEditModal = (user) => {
     setSelectedUser(user)
     setModalMode('edit')
@@ -174,20 +194,19 @@ function UserManagement() {
     setShowModal(true)
   }
 
-  // Open modal in View mode (read-only)
+  // Open View modal (read-only)
   const openViewModal = (user) => {
     setSelectedUser(user)
     setModalMode('view')
     setShowModal(true)
   }
 
-  // Close modal and clear selected user
   const closeModal = () => {
     setShowModal(false)
     setSelectedUser(null)
   }
 
-  // Handle Add and Edit form submissions
+  // Handle both Add and Edit submissions
   const handleSubmit = () => {
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill all required fields')
@@ -195,26 +214,23 @@ function UserManagement() {
     }
 
     if (modalMode === 'add') {
-      // Prevent duplicate emails
       if (users.some(u => u.email === formData.email)) {
         alert('Email already exists!')
         return
       }
 
-      // OPS users must send an approval request instead of creating directly
+      // OPS users send approval request
       if (currentUser?.role === 'ops') {
         savePendingRequest({
-          type: 'add_user',
-          data: formData,
-          requestedBy: currentUser.id,
-          requestedByName: currentUser.name
+          type: 'add_user', data: formData,
+          requestedBy: currentUser.id, requestedByName: currentUser.name
         })
         alert('Request sent to Super Admin for approval!')
         closeModal()
         return
       }
 
-      // Save user locally first for instant UI response
+      // Save locally first for instant UI
       const newUser = {
         id: `user-${Date.now()}`,
         name: formData.name,
@@ -231,46 +247,40 @@ function UserManagement() {
       const updatedUsers = [...users, newUser]
       saveUsers(updatedUsers)
 
-      // ✅ Sync to Firebase and store the returned Firebase ID as firebaseId
-      // This is critical — future updates/deletes use firebaseId to find the document
+      // ✅ Sync to Firebase and store returned Firebase doc ID as firebaseId
       setTimeout(() => {
         createUserInFirebase(newUser).then(result => {
           if (result.success) {
             const finalUsers = updatedUsers.map(u =>
-              u.id === newUser.id
-                ? { ...u, firebaseId: result.id }  // ← store Firebase doc ID separately
-                : u
+              u.id === newUser.id ? { ...u, firebaseId: result.id } : u
             )
             saveUsers(finalUsers)
+            console.log('User synced to Firebase with ID:', result.id)
           }
-        }).catch(() => {})
+        }).catch(err => console.error('Firebase create failed:', err))
       }, 0)
 
       alert('User created successfully!')
       closeModal()
 
     } else if (modalMode === 'edit' && selectedUser) {
-      // Only Super Admin can change roles
       if (formData.role !== selectedUser.role && !canChangeRole) {
         alert('Only Super Admin can change roles!')
         return
       }
 
-      // OPS users must send an approval request for edits
       if (currentUser?.role === 'ops') {
         savePendingRequest({
-          type: 'edit_user',
-          userId: selectedUser.id,
+          type: 'edit_user', userId: selectedUser.id,
           data: { updates: formData },
-          requestedBy: currentUser.id,
-          requestedByName: currentUser.name
+          requestedBy: currentUser.id, requestedByName: currentUser.name
         })
         alert('Edit request sent to Super Admin!')
         closeModal()
         return
       }
 
-      // Build the updated user object
+      // Fields to update
       const updatedFields = {
         name: formData.name,
         email: formData.email,
@@ -278,23 +288,22 @@ function UserManagement() {
         department: formData.department,
         role: formData.role,
         status: formData.status,
-        // Only update password if reset checkbox is checked and new password is entered
         ...(formData.resetPassword && formData.password && { password: formData.password })
       }
 
-      // Apply updates to localStorage immediately
+      // Apply locally
       const updated = users.map(u =>
         u.id === selectedUser.id ? { ...u, ...updatedFields } : u
       )
       saveUsers(updated)
 
-      // ✅ Sync session: if editing the currently logged-in user, refresh their session data
-      // This prevents auto-logout caused by stale currentUser in localStorage
+      // Refresh session if editing currently logged-in user
       syncCurrentUserSession({ ...selectedUser, ...updatedFields })
 
-      // ✅ Sync to Firebase using firebaseId (not local id)
-      // firebaseId is the actual Firestore document ID stored when the user was first created
+      // ✅ Sync to Firebase using correct Firebase doc ID
       const firebaseDocId = getFirebaseId(selectedUser)
+      console.log('Updating Firebase doc:', firebaseDocId)
+
       if (firebaseDocId) {
         setTimeout(() => {
           const firebaseUpdates = {
@@ -305,14 +314,15 @@ function UserManagement() {
             role: formData.role,
             status: formData.status
           }
-          // Include password in Firebase update only when reset is explicitly requested
           if (formData.resetPassword && formData.password) {
             firebaseUpdates.password = formData.password
           }
-          updateUserInFirebase(firebaseDocId, firebaseUpdates).catch(err => {
-            console.error('Firebase update failed:', err)
-          })
+          updateUserInFirebase(firebaseDocId, firebaseUpdates)
+            .then(() => console.log('Firebase updated successfully'))
+            .catch(err => console.error('Firebase update failed:', err))
         }, 0)
+      } else {
+        console.warn('No Firebase ID found for user:', selectedUser.email)
       }
 
       alert('User updated successfully!')
@@ -320,67 +330,49 @@ function UserManagement() {
     }
   }
 
-  // Toggle user between active and inactive status
+  // Toggle active / inactive status
   const toggleStatus = (user) => {
-    // OPS users must request status changes via approval
     if (currentUser?.role === 'ops') {
       savePendingRequest({
-        type: 'toggle_status',
-        userId: user.id,
-        currentStatus: user.status,
-        requestedBy: currentUser.id,
-        requestedByName: currentUser.name
+        type: 'toggle_status', userId: user.id, currentStatus: user.status,
+        requestedBy: currentUser.id, requestedByName: currentUser.name
       })
       alert('Status change request sent!')
       return
     }
 
-    if (!canEditUser(user)) {
-      alert('You cannot modify this user!')
-      return
-    }
+    if (!canEditUser(user)) { alert('You cannot modify this user!'); return }
 
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
-    const updated = users.map(u =>
-      u.id === user.id ? { ...u, status: newStatus } : u
-    )
-    saveUsers(updated)
+    saveUsers(users.map(u => u.id === user.id ? { ...u, status: newStatus } : u))
 
-    // ✅ Use firebaseId for Firebase operations
     const firebaseDocId = getFirebaseId(user)
     if (firebaseDocId) {
       setTimeout(() => {
-        updateUserInFirebase(firebaseDocId, { status: newStatus }).catch(err => {
-          console.error('Firebase status update failed:', err)
-        })
+        updateUserInFirebase(firebaseDocId, { status: newStatus })
+          .catch(err => console.error('Firebase status update failed:', err))
       }, 0)
     }
   }
 
-  // Permanently delete a user after confirmation
+  // Permanently delete user
   const deleteUser = (user) => {
-    if (!canDeleteUser(user)) {
-      alert('You cannot delete this user!')
-      return
-    }
+    if (!canDeleteUser(user)) { alert('You cannot delete this user!'); return }
 
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
-      const updated = users.filter(u => u.id !== user.id)
-      saveUsers(updated)
+      saveUsers(users.filter(u => u.id !== user.id))
 
-      // ✅ Use firebaseId for Firebase operations
       const firebaseDocId = getFirebaseId(user)
       if (firebaseDocId) {
         setTimeout(() => {
-          deleteUserFromFirebase(firebaseDocId).catch(err => {
-            console.error('Firebase delete failed:', err)
-          })
+          deleteUserFromFirebase(firebaseDocId)
+            .catch(err => console.error('Firebase delete failed:', err))
         }, 0)
       }
     }
   }
 
-  // Export currently filtered users list as a CSV file
+  // Export filtered users as CSV
   const exportUsers = () => {
     const csv = [
       ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Created'].join(','),
@@ -400,7 +392,6 @@ function UserManagement() {
 
   return (
     <div className={styles.container}>
-      {/* Page Header */}
       <div className={styles.pageHeader}>
         <div>
           <h1>User Management</h1>
@@ -413,55 +404,35 @@ function UserManagement() {
         )}
       </div>
 
-      {/* Stats Cards */}
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
           <Users size={24} color="#00d4ff" />
-          <div>
-            <span className={styles.statNumber}>{stats.total}</span>
-            <span className={styles.statLabel}>Total Users</span>
-          </div>
+          <div><span className={styles.statNumber}>{stats.total}</span><span className={styles.statLabel}>Total Users</span></div>
         </div>
         <div className={styles.statCard}>
           <UserCheck size={24} color="#6bcf7f" />
-          <div>
-            <span className={styles.statNumber}>{stats.active}</span>
-            <span className={styles.statLabel}>Active</span>
-          </div>
+          <div><span className={styles.statNumber}>{stats.active}</span><span className={styles.statLabel}>Active</span></div>
         </div>
         <div className={styles.statCard}>
           <UserX size={24} color="#ff6b6b" />
-          <div>
-            <span className={styles.statNumber}>{stats.inactive}</span>
-            <span className={styles.statLabel}>Inactive</span>
-          </div>
+          <div><span className={styles.statNumber}>{stats.inactive}</span><span className={styles.statLabel}>Inactive</span></div>
         </div>
         <div className={styles.statCard}>
           <Shield size={24} color="#9b59b6" />
-          <div>
-            <span className={styles.statNumber}>{stats.byRole.super_admin + stats.byRole.admin}</span>
-            <span className={styles.statLabel}>Admins</span>
-          </div>
+          <div><span className={styles.statNumber}>{stats.byRole.super_admin + stats.byRole.admin}</span><span className={styles.statLabel}>Admins</span></div>
         </div>
       </div>
 
-      {/* Search and Filter Bar */}
       <div className={styles.filtersBar}>
         <div className={styles.searchBox}>
           <Search size={18} />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <input type="text" placeholder="Search users..." value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} />
         </div>
         <div className={styles.filterGroup}>
           <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
             <option value="all">All Roles</option>
-            {Object.values(ROLES).map(r => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
+            {Object.values(ROLES).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="all">All Status</option>
@@ -470,9 +441,7 @@ function UserManagement() {
           </select>
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}>
             <option value="all">All Departments</option>
-            {departments.map(d => (
-              <option key={d.id} value={d.name}>{d.name}</option>
-            ))}
+            {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
           </select>
         </div>
         <button className={styles.exportBtn} onClick={exportUsers}>
@@ -480,18 +449,12 @@ function UserManagement() {
         </button>
       </div>
 
-      {/* Users Table */}
       <div className={styles.tableContainer}>
         <table className={styles.usersTable}>
           <thead>
             <tr>
-              <th>User</th>
-              <th>Contact</th>
-              <th>Department</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th>User</th><th>Contact</th><th>Department</th>
+              <th>Role</th><th>Status</th><th>Created</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -499,9 +462,7 @@ function UserManagement() {
               <tr key={user.id} className={user.status === 'inactive' ? styles.inactive : ''}>
                 <td>
                   <div className={styles.userCell}>
-                    <div className={styles.avatar}>
-                      {user.name.charAt(0).toUpperCase()}
-                    </div>
+                    <div className={styles.avatar}>{user.name.charAt(0).toUpperCase()}</div>
                     <div>
                       <span className={styles.userName}>{user.name}</span>
                       <span className={styles.userEmail}>{user.email}</span>
@@ -516,34 +477,22 @@ function UserManagement() {
                   </span>
                 </td>
                 <td>
-                  <button
-                    className={`${styles.statusToggle} ${styles[user.status]}`}
-                    onClick={() => toggleStatus(user)}
-                    disabled={!canEditUser(user)}
-                  >
+                  <button className={`${styles.statusToggle} ${styles[user.status]}`}
+                    onClick={() => toggleStatus(user)} disabled={!canEditUser(user)}>
                     {user.status === 'active'
                       ? <><UserCheck size={14} /> Active</>
-                      : <><UserX size={14} /> Inactive</>
-                    }
+                      : <><UserX size={14} /> Inactive</>}
                   </button>
                 </td>
-                <td className={styles.dateCell}>
-                  {new Date(user.createdAt).toLocaleDateString()}
-                </td>
+                <td className={styles.dateCell}>{new Date(user.createdAt).toLocaleDateString()}</td>
                 <td>
                   <div className={styles.actionButtons}>
-                    <button className={styles.actionBtn} onClick={() => openViewModal(user)} title="View Details">
-                      <Eye size={16} />
-                    </button>
+                    <button className={styles.actionBtn} onClick={() => openViewModal(user)} title="View"><Eye size={16} /></button>
                     {canEditUser(user) && (
-                      <button className={styles.actionBtn} onClick={() => openEditModal(user)} title="Edit User">
-                        <Edit2 size={16} />
-                      </button>
+                      <button className={styles.actionBtn} onClick={() => openEditModal(user)} title="Edit"><Edit2 size={16} /></button>
                     )}
                     {canDeleteUser(user) && (
-                      <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(user)} title="Delete User">
-                        <Trash2 size={16} />
-                      </button>
+                      <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(user)} title="Delete"><Trash2 size={16} /></button>
                     )}
                   </div>
                 </td>
@@ -551,16 +500,11 @@ function UserManagement() {
             ))}
           </tbody>
         </table>
-
         {filteredUsers.length === 0 && (
-          <div className={styles.emptyState}>
-            <Users size={48} color="#ddd" />
-            <p>No users found</p>
-          </div>
+          <div className={styles.emptyState}><Users size={48} color="#ddd" /><p>No users found</p></div>
         )}
       </div>
 
-      {/* Add / Edit / View Modal */}
       {showModal && (
         <div className={styles.modalOverlay} onClick={closeModal}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -574,7 +518,6 @@ function UserManagement() {
             </div>
 
             <div className={styles.modalBody}>
-              {/* View Mode — read-only details */}
               {modalMode === 'view' ? (
                 <div className={styles.viewDetails}>
                   <div className={styles.detailRow}><label>Name</label><span>{selectedUser?.name}</span></div>
@@ -597,123 +540,82 @@ function UserManagement() {
                   </div>
                 </div>
               ) : (
-                /* Add / Edit Form */
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
                     <label>Full Name *</label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    />
+                    <input type="text" value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   </div>
-
                   <div className={styles.formGroup}>
                     <label>Email *</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    />
+                    <input type="email" value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   </div>
-
                   <div className={styles.formGroup}>
                     <label>Phone Number *</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    />
+                    <input type="tel" value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                   </div>
 
-                  {/* Password field only shown in Add mode */}
                   {modalMode === 'add' && (
                     <div className={styles.formGroup}>
                       <label>Password *</label>
-                      <input
-                        type="password"
-                        value={formData.password}
+                      <input type="password" value={formData.password}
                         onChange={(e) => setFormData({...formData, password: e.target.value})}
-                        placeholder="Leave empty for default (password123)"
-                      />
+                        placeholder="Leave empty for default (password123)" />
                     </div>
                   )}
 
                   <div className={styles.formGroup}>
                     <label>Department</label>
-                    <select
-                      value={formData.department}
-                      onChange={(e) => setFormData({...formData, department: e.target.value})}
-                    >
-                      {departments.map(d => (
-                        <option key={d.id} value={d.name}>{d.name}</option>
-                      ))}
+                    <select value={formData.department}
+                      onChange={(e) => setFormData({...formData, department: e.target.value})}>
+                      {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
                     </select>
                   </div>
 
                   <div className={styles.formGroup}>
                     <label>Role</label>
-                    <select
-                      value={formData.role}
+                    <select value={formData.role}
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      disabled={!canChangeRole}
-                    >
-                      {Object.values(ROLES).map(r => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
+                      disabled={!canChangeRole}>
+                      {Object.values(ROLES).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
-                    {!canChangeRole && (
-                      <small className={styles.hint}>Only Super Admin can change roles</small>
-                    )}
+                    {!canChangeRole && <small className={styles.hint}>Only Super Admin can change roles</small>}
                   </div>
 
-                  {/* Edit-only fields: Status + Password Reset */}
                   {modalMode === 'edit' && (
                     <>
                       <div className={styles.formGroup}>
                         <label>Status</label>
-                        <select
-                          value={formData.status}
-                          onChange={(e) => setFormData({...formData, status: e.target.value})}
-                        >
+                        <select value={formData.status}
+                          onChange={(e) => setFormData({...formData, status: e.target.value})}>
                           <option value="active">Active</option>
                           <option value="inactive">Inactive</option>
                         </select>
                       </div>
 
-                      {/* Password reset toggle — unchecked by default */}
                       <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                         <div className={styles.passwordResetBox}>
                           <label className={styles.resetLabel}>
-                            <input
-                              type="checkbox"
-                              checked={formData.resetPassword}
+                            <input type="checkbox" checked={formData.resetPassword}
                               onChange={(e) => setFormData({
-                                ...formData,
-                                resetPassword: e.target.checked,
+                                ...formData, resetPassword: e.target.checked,
                                 password: e.target.checked ? formData.password : ''
-                              })}
-                            />
+                              })} />
                             <Key size={16} />
                             <span>Reset Password</span>
                           </label>
                         </div>
                       </div>
 
-                      {/* New password input — visible only when reset is checked */}
                       {formData.resetPassword && (
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                           <label>New Password *</label>
-                          <input
-                            type="password"
-                            value={formData.password}
+                          <input type="password" value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
-                            placeholder="Enter new password"
-                            required
-                          />
-                          <small className={styles.hint}>
-                            User will need to login with this new password
-                          </small>
+                            placeholder="Enter new password" required />
+                          <small className={styles.hint}>User will need to login with this new password</small>
                         </div>
                       )}
                     </>
@@ -722,15 +624,11 @@ function UserManagement() {
               )}
             </div>
 
-            {/* Modal Footer — hidden in View mode */}
             {modalMode !== 'view' && (
               <div className={styles.modalFooter}>
                 <button className={styles.cancelBtn} onClick={closeModal}>Cancel</button>
-                <button
-                  className={styles.saveBtn}
-                  onClick={handleSubmit}
-                  disabled={currentUser?.role === 'ops' && modalMode === 'add'}
-                >
+                <button className={styles.saveBtn} onClick={handleSubmit}
+                  disabled={currentUser?.role === 'ops' && modalMode === 'add'}>
                   {currentUser?.role === 'ops' ? 'Send Request' : 'Save User'}
                 </button>
               </div>
