@@ -78,18 +78,7 @@ export const defaultUsers = [
     createdAt: new Date().toISOString(),
     lastLogin: null
   },
-  {
-    id: 'user-3',
-    name: 'Ops User',
-    email: 'bilalxmughal@gmail.com',
-    phone: '+92-300-1112223',
-    password: 'admin123',
-    department: 'Operations',
-    role: 'ops',
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    lastLogin: null
-  }
+
 ]
 
 export const defaultDepartments = [
