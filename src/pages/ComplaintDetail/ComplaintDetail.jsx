@@ -8,9 +8,10 @@ import { useAuth } from '../../context/AuthContext'
 import { COMPLAINT_BY_OPTIONS, TICKET_STATUS, formatDateDDMMYYYY } from '../../data/complaintConfig'
 import { defaultDepartments } from '../../data/users'
 import { sendMentionEmail } from '../../utils/emailService'
+import { updateComplaint } from '../../lib/firebase'
 import styles from './ComplaintDetail.module.css'
 
-// Comment text mein @mention ko highlight karna
+// Render @mentions as highlighted spans in comment text
 const renderCommentWithMentions = (text) => {
   const parts = text.split(/(@\w+(?:\s\w+)?)/g)
   return parts.map((part, i) =>
@@ -31,23 +32,25 @@ function ComplaintDetail() {
   const [allUsers, setAllUsers] = useState([])
   const [activeTab, setActiveTab] = useState('details')
   const [notFound, setNotFound] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // Comment States
+  // Comment states
   const [newComment, setNewComment] = useState('')
   const [isSending, setIsSending] = useState(false)
 
-  // ✅ @MENTION States
+  // @mention states
   const [mentionQuery, setMentionQuery] = useState('')
   const [showMentionDropdown, setShowMentionDropdown] = useState(false)
   const [mentionDropdownPos, setMentionDropdownPos] = useState(0)
 
-  // ✅ Comment Search State
+  // Comment search state
   const [commentSearch, setCommentSearch] = useState('')
 
-  // Reassign States
+  // Reassign states
   const [showReassign, setShowReassign] = useState(false)
   const [reassignData, setReassignData] = useState({ dept: '', userId: '', userName: '', reason: '' })
 
+  // Load complaint from localStorage (already synced from Firebase by ComplaintBoard)
   useEffect(() => {
     const savedComplaints = localStorage.getItem('complaints')
     const complaints = savedComplaints ? JSON.parse(savedComplaints) : []
@@ -62,12 +65,26 @@ function ComplaintDetail() {
     setAllUsers(savedUsers ? JSON.parse(savedUsers) : [])
   }, [id])
 
-  const saveComplaint = useCallback((updated) => {
+  // ✅ Save complaint to both localStorage AND Firebase
+  const saveComplaint = useCallback(async (updated) => {
+    // Update localStorage immediately for instant UI
     const savedComplaints = localStorage.getItem('complaints')
     const complaints = savedComplaints ? JSON.parse(savedComplaints) : []
     const updatedList = complaints.map(c => c.id === updated.id ? updated : c)
     localStorage.setItem('complaints', JSON.stringify(updatedList))
     setComplaint(updated)
+
+    // ✅ Sync to Firebase in background
+    // id here is the Firebase document ID (set when complaint was created)
+    if (updated.id && !updated.id.startsWith('comp-')) {
+      try {
+        const { id: _id, ...fieldsToUpdate } = updated
+        await updateComplaint(updated.id, fieldsToUpdate)
+        console.log('Complaint synced to Firebase:', updated.id)
+      } catch (err) {
+        console.error('Firebase sync failed:', err)
+      }
+    }
   }, [])
 
   const addNotification = useCallback((userId, message, ticketNo, type = 'mention') => {
@@ -75,29 +92,22 @@ function ComplaintDetail() {
     const notifications = saved ? JSON.parse(saved) : []
     notifications.unshift({
       id: `notif-${Date.now()}`,
-      userId,
-      message,
-      ticketNo,
-      ticketId: id,
-      type,
-      read: false,
+      userId, message, ticketNo, ticketId: id,
+      type, read: false,
       timestamp: new Date().toISOString()
     })
     localStorage.setItem('notifications', JSON.stringify(notifications))
   }, [id])
 
-  // ✅ @MENTION HANDLER - textarea mein @ detect karna
+  // Handle @mention detection in textarea
   const handleCommentChange = (e) => {
     const value = e.target.value
     setNewComment(value)
-
     const cursorPos = e.target.selectionStart
     const textBeforeCursor = value.slice(0, cursorPos)
     const atIndex = textBeforeCursor.lastIndexOf('@')
-
     if (atIndex !== -1) {
       const query = textBeforeCursor.slice(atIndex + 1)
-      // Sirf agar @ ke baad space nahi hai
       if (!query.includes(' ') || query.length === 0) {
         setMentionQuery(query)
         setShowMentionDropdown(true)
@@ -109,37 +119,35 @@ function ComplaintDetail() {
     setMentionQuery('')
   }
 
-  // ✅ Filtered users for mention dropdown
+  // Users shown in @mention dropdown
   const mentionUsers = allUsers.filter(u =>
     u.name?.toLowerCase().includes(mentionQuery.toLowerCase()) &&
     u.id !== currentUser?.id
   ).slice(0, 6)
 
-  // ✅ User select karna from mention dropdown
+  // Insert @mention into comment text
   const selectMention = (user) => {
     const beforeAt = newComment.slice(0, mentionDropdownPos)
     const afterCursor = newComment.slice(mentionDropdownPos + mentionQuery.length + 1)
-    const newText = `${beforeAt}@${user.name} ${afterCursor}`
-    setNewComment(newText)
+    setNewComment(`${beforeAt}@${user.name} ${afterCursor}`)
     setShowMentionDropdown(false)
     setMentionQuery('')
     textareaRef.current?.focus()
   }
 
-  // ✅ Parse @mentions from comment text
+  // Extract mentioned users from comment text
   const parseMentions = (text) => {
     const mentionRegex = /@(\w+(?:\s\w+)?)/g
     const mentions = []
     let match
     while ((match = mentionRegex.exec(text)) !== null) {
-      const mentionedName = match[1]
-      const user = allUsers.find(u => u.name?.toLowerCase() === mentionedName.toLowerCase())
+      const user = allUsers.find(u => u.name?.toLowerCase() === match[1].toLowerCase())
       if (user) mentions.push(user)
     }
     return mentions
   }
 
-  // ✅ ADD COMMENT with @mention email
+  // Add comment — saves to Firebase, sends mention emails/notifications
   const addComment = async () => {
     if (!newComment.trim() || !complaint || isSending) return
     setIsSending(true)
@@ -167,24 +175,20 @@ function ComplaintDetail() {
         }
       ]
     }
-    saveComplaint(updated)
 
-    // ✅ @Mention detect karo aur email + notification bhejo
+    await saveComplaint(updated)
+
+    // Send notifications and emails for @mentions
     const mentionedUsers = parseMentions(newComment.trim())
     for (const user of mentionedUsers) {
-      // localStorage notification
       addNotification(
         user.id,
         `${currentUser?.name} mentioned you in ticket ${complaint.ticketNo}: "${newComment.trim().slice(0, 60)}..."`,
-        complaint.ticketNo,
-        'mention'
+        complaint.ticketNo, 'mention'
       )
-
-      // Email bhejna agar user ki email hai
       if (user.email) {
         sendMentionEmail({
-          toEmail: user.email,
-          toName: user.name,
+          toEmail: user.email, toName: user.name,
           fromName: currentUser?.name,
           commentText: newComment.trim(),
           ticketNo: complaint.ticketNo,
@@ -197,93 +201,108 @@ function ComplaintDetail() {
     setIsSending(false)
   }
 
-  // Enter key se send (Shift+Enter = new line)
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey && !showMentionDropdown) {
       e.preventDefault()
       addComment()
     }
-    if (e.key === 'Escape') {
-      setShowMentionDropdown(false)
-    }
-    // Arrow keys for dropdown navigation
-    if (showMentionDropdown && e.key === 'ArrowDown') {
-      e.preventDefault()
-    }
+    if (e.key === 'Escape') setShowMentionDropdown(false)
   }
 
-  const updateStatus = (newStatus) => {
+  // ✅ Update ticket status — saves to Firebase via saveComplaint
+  const updateStatus = async (newStatus) => {
     if (!complaint) return
     const canChange =
       complaint.assignedToId === currentUser?.id ||
       complaint.assignedTo === currentUser?.name ||
       currentUser?.role === 'admin' ||
       currentUser?.role === 'super_admin'
+
     if (!canChange) { alert('Only assigned user or Admin can change status'); return }
+
+    setIsSaving(true)
     const updated = {
       ...complaint,
       ticketStatus: newStatus,
       complaintStatus: newStatus === 'Closed' ? 'Resolved' : newStatus === 'In Progress' ? 'In Progress' : 'Pending',
       resolvedPercent: newStatus === 'Closed' ? 100 : newStatus === 'In Progress' ? 50 : 0,
       resolvedDate: newStatus === 'Closed' ? new Date().toISOString() : null,
-      activityLog: [...(complaint.activityLog || []), {
-        id: `act-${Date.now()}`,
-        type: 'status_change',
-        text: `Status changed to "${newStatus}" by ${currentUser?.name}`,
-        by: currentUser?.name,
-        fromStatus: complaint.ticketStatus,
-        toStatus: newStatus,
-        timestamp: new Date().toISOString()
-      }]
+      activityLog: [
+        ...(complaint.activityLog || []),
+        {
+          id: `act-${Date.now()}`,
+          type: 'status_change',
+          text: `Status changed to "${newStatus}" by ${currentUser?.name}`,
+          by: currentUser?.name,
+          fromStatus: complaint.ticketStatus,
+          toStatus: newStatus,
+          timestamp: new Date().toISOString()
+        }
+      ]
     }
-    saveComplaint(updated)
+
+    await saveComplaint(updated)
+    setIsSaving(false)
   }
 
-  const handleReassign = () => {
+  // ✅ Reassign ticket — saves to Firebase via saveComplaint
+  const handleReassign = async () => {
     if (!reassignData.dept || !reassignData.userId || !reassignData.reason.trim()) {
-      alert('Please fill all fields including reason')
-      return
+      alert('Please fill all fields including reason'); return
     }
+
     const oldAssignedId = complaint.assignedToId
     const oldAssignedName = complaint.assignedTo
+
     const updated = {
       ...complaint,
       assignedDept: reassignData.dept,
       assignedTo: reassignData.userName,
       assignedToId: reassignData.userId,
       assignedToName: reassignData.userName,
-      reassignHistory: [...(complaint.reassignHistory || []), {
-        id: `reas-${Date.now()}`,
-        fromUser: oldAssignedName,
-        fromUserId: oldAssignedId,
-        toUser: reassignData.userName,
-        toUserId: reassignData.userId,
-        toDept: reassignData.dept,
-        reason: reassignData.reason.trim(),
-        reassignedBy: currentUser?.name,
-        reassignedById: currentUser?.id,
-        timestamp: new Date().toISOString()
-      }],
-      activityLog: [...(complaint.activityLog || []), {
-        id: `act-${Date.now()}`,
-        type: 'reassign',
-        text: `Ticket reassigned from "${oldAssignedName}" to "${reassignData.userName}" (${reassignData.dept}) by ${currentUser?.name}. Reason: ${reassignData.reason}`,
-        by: currentUser?.name,
-        timestamp: new Date().toISOString()
-      }]
+      reassignHistory: [
+        ...(complaint.reassignHistory || []),
+        {
+          id: `reas-${Date.now()}`,
+          fromUser: oldAssignedName, fromUserId: oldAssignedId,
+          toUser: reassignData.userName, toUserId: reassignData.userId,
+          toDept: reassignData.dept,
+          reason: reassignData.reason.trim(),
+          reassignedBy: currentUser?.name, reassignedById: currentUser?.id,
+          timestamp: new Date().toISOString()
+        }
+      ],
+      activityLog: [
+        ...(complaint.activityLog || []),
+        {
+          id: `act-${Date.now()}`,
+          type: 'reassign',
+          text: `Ticket reassigned from "${oldAssignedName}" to "${reassignData.userName}" (${reassignData.dept}) by ${currentUser?.name}. Reason: ${reassignData.reason}`,
+          by: currentUser?.name,
+          timestamp: new Date().toISOString()
+        }
+      ]
     }
-    saveComplaint(updated)
+
+    await saveComplaint(updated)
+
     if (oldAssignedId) {
-      addNotification(oldAssignedId, `Ticket ${complaint.ticketNo} has been reassigned from you to ${reassignData.userName} by ${currentUser?.name}. Reason: ${reassignData.reason}`, complaint.ticketNo, 'reassign')
+      addNotification(oldAssignedId,
+        `Ticket ${complaint.ticketNo} has been reassigned from you to ${reassignData.userName} by ${currentUser?.name}. Reason: ${reassignData.reason}`,
+        complaint.ticketNo, 'reassign')
     }
-    addNotification(reassignData.userId, `Ticket ${complaint.ticketNo} has been assigned to you by ${currentUser?.name}.`, complaint.ticketNo, 'reassign')
+    addNotification(reassignData.userId,
+      `Ticket ${complaint.ticketNo} has been assigned to you by ${currentUser?.name}.`,
+      complaint.ticketNo, 'reassign')
+
     setShowReassign(false)
     setReassignData({ dept: '', userId: '', userName: '', reason: '' })
   }
 
-  // ✅ Filtered comments based on search
+  // Filtered comments by search term
   const filteredComments = (complaint?.comments || []).filter(c =>
-    !commentSearch || c.text?.toLowerCase().includes(commentSearch.toLowerCase()) ||
+    !commentSearch ||
+    c.text?.toLowerCase().includes(commentSearch.toLowerCase()) ||
     c.by?.toLowerCase().includes(commentSearch.toLowerCase())
   )
 
@@ -291,8 +310,11 @@ function ComplaintDetail() {
     ? allUsers.filter(u => u.department === reassignData.dept && u.status === 'active')
     : []
 
-  const canReassign = complaint?.submittedById === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
-  const canChangeStatus = complaint?.assignedToId === currentUser?.id || complaint?.assignedTo === currentUser?.name || currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
+  const canReassign = complaint?.submittedById === currentUser?.id ||
+    currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
+  const canChangeStatus = complaint?.assignedToId === currentUser?.id ||
+    complaint?.assignedTo === currentUser?.name ||
+    currentUser?.role === 'admin' || currentUser?.role === 'super_admin'
 
   if (notFound) {
     return (
@@ -314,10 +336,16 @@ function ComplaintDetail() {
         </button>
         <div className={styles.ticketMeta}>
           <span className={styles.ticketNo}>{complaint.ticketNo}</span>
-          <span className={styles.submittedInfo}>Created {formatDateDDMMYYYY(complaint.date)} by {complaint.submittedBy}</span>
+          <span className={styles.submittedInfo}>
+            Created {formatDateDDMMYYYY(complaint.date)} by {complaint.submittedBy}
+            {isSaving && <span style={{ color: '#00d4ff', marginLeft: 8 }}>Saving...</span>}
+          </span>
         </div>
         {canReassign && (
-          <button className={`${styles.reassignTriggerBtn} ${showReassign ? styles.cancelMode : ''}`} onClick={() => setShowReassign(!showReassign)}>
+          <button
+            className={`${styles.reassignTriggerBtn} ${showReassign ? styles.cancelMode : ''}`}
+            onClick={() => setShowReassign(!showReassign)}
+          >
             {showReassign ? <><X size={16} /> Cancel</> : <><UserCheck size={16} /> Reassign Ticket</>}
           </button>
         )}
@@ -328,34 +356,44 @@ function ComplaintDetail() {
         <div className={styles.reassignPanel}>
           <div className={styles.reassignHeader}>
             <h3><UserCheck size={18} /> Reassign Ticket</h3>
-            <span className={styles.reassignCurrent}>Currently: <strong>{complaint.assignedTo}</strong> — {complaint.assignedDept}</span>
+            <span className={styles.reassignCurrent}>
+              Currently: <strong>{complaint.assignedTo}</strong> — {complaint.assignedDept}
+            </span>
           </div>
           <div className={styles.reassignForm}>
             <div className={styles.reassignField}>
               <label>New Department *</label>
-              <select value={reassignData.dept} onChange={(e) => setReassignData({ ...reassignData, dept: e.target.value, userId: '', userName: '' })}>
+              <select value={reassignData.dept}
+                onChange={(e) => setReassignData({ ...reassignData, dept: e.target.value, userId: '', userName: '' })}>
                 <option value="">Select Department</option>
                 {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
               </select>
             </div>
             <div className={styles.reassignField}>
               <label>Assign To *</label>
-              <select value={reassignData.userId} onChange={(e) => {
-                const u = availableUsersForReassign.find(u => u.id === e.target.value)
-                setReassignData({ ...reassignData, userId: e.target.value, userName: u?.name || '' })
-              }} disabled={!reassignData.dept}>
+              <select value={reassignData.userId}
+                onChange={(e) => {
+                  const u = availableUsersForReassign.find(u => u.id === e.target.value)
+                  setReassignData({ ...reassignData, userId: e.target.value, userName: u?.name || '' })
+                }}
+                disabled={!reassignData.dept}>
                 <option value="">Select User</option>
                 {availableUsersForReassign.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
-              {reassignData.dept && availableUsersForReassign.length === 0 && <small className={styles.noUsers}>No active users in this department</small>}
+              {reassignData.dept && availableUsersForReassign.length === 0 && (
+                <small className={styles.noUsers}>No active users in this department</small>
+              )}
             </div>
             <div className={`${styles.reassignField} ${styles.fullField}`}>
               <label>Reason *</label>
-              <textarea rows="3" placeholder="Why is this ticket being reassigned?" value={reassignData.reason} onChange={(e) => setReassignData({ ...reassignData, reason: e.target.value })} />
+              <textarea rows="3" placeholder="Why is this ticket being reassigned?"
+                value={reassignData.reason}
+                onChange={(e) => setReassignData({ ...reassignData, reason: e.target.value })} />
             </div>
           </div>
           <div className={styles.reassignActions}>
-            <button className={styles.confirmReassignBtn} onClick={handleReassign} disabled={!reassignData.dept || !reassignData.userId || !reassignData.reason.trim()}>
+            <button className={styles.confirmReassignBtn} onClick={handleReassign}
+              disabled={!reassignData.dept || !reassignData.userId || !reassignData.reason.trim()}>
               <UserCheck size={16} /> Confirm Reassign
             </button>
           </div>
@@ -380,13 +418,20 @@ function ComplaintDetail() {
         <div className={styles.statusButtons}>
           {Object.values(TICKET_STATUS).map(status => (
             <button key={status.value} className={styles.statusBtn}
-              style={{ background: complaint.ticketStatus === status.value ? status.bg : '#f5f5f5', color: complaint.ticketStatus === status.value ? status.color : '#666' }}
-              onClick={() => canChangeStatus && updateStatus(status.value)} disabled={!canChangeStatus}>
+              style={{
+                background: complaint.ticketStatus === status.value ? status.bg : '#f5f5f5',
+                color: complaint.ticketStatus === status.value ? status.color : '#666',
+                opacity: isSaving ? 0.6 : 1
+              }}
+              onClick={() => !isSaving && canChangeStatus && updateStatus(status.value)}
+              disabled={!canChangeStatus || isSaving}>
               {status.label}
             </button>
           ))}
         </div>
-        {!canChangeStatus && <span className={styles.permissionNote}>Only {complaint.assignedTo} or Admin can change status</span>}
+        {!canChangeStatus && (
+          <span className={styles.permissionNote}>Only {complaint.assignedTo} or Admin can change status</span>
+        )}
       </div>
 
       {/* Tabs */}
@@ -406,7 +451,8 @@ function ComplaintDetail() {
       </div>
 
       <div className={styles.tabContent}>
-        {/* DETAILS */}
+
+        {/* DETAILS TAB */}
         {activeTab === 'details' && (
           <div className={styles.detailsGrid}>
             <div className={styles.detailCard}>
@@ -428,7 +474,9 @@ function ComplaintDetail() {
                 <div className={styles.detailItem}><label>Sub Category</label><span>{complaint.issueSubCategoryName || '-'}</span></div>
                 <div className={styles.detailItem}>
                   <label>Source</label>
-                  <span className={`${styles.sourceBadge} ${styles[complaint.complaintBy]}`}>{COMPLAINT_BY_OPTIONS.find(o => o.value === complaint.complaintBy)?.label || 'Client'}</span>
+                  <span className={`${styles.sourceBadge} ${styles[complaint.complaintBy]}`}>
+                    {COMPLAINT_BY_OPTIONS.find(o => o.value === complaint.complaintBy)?.label || 'Client'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -439,23 +487,15 @@ function ComplaintDetail() {
           </div>
         )}
 
-        {/* ✅ COMMENTS TAB with search + @mention */}
+        {/* COMMENTS TAB */}
         {activeTab === 'comments' && (
           <div className={styles.commentsSection}>
-
-            {/* Comment Search */}
             <div className={styles.commentSearch}>
               <Search size={16} color="#aaa" />
-              <input
-                type="text"
-                placeholder="Search in comments..."
-                value={commentSearch}
-                onChange={(e) => setCommentSearch(e.target.value)}
-              />
+              <input type="text" placeholder="Search in comments..."
+                value={commentSearch} onChange={(e) => setCommentSearch(e.target.value)} />
               {commentSearch && (
-                <button onClick={() => setCommentSearch('')} className={styles.clearSearch}>
-                  <X size={14} />
-                </button>
+                <button onClick={() => setCommentSearch('')} className={styles.clearSearch}><X size={14} /></button>
               )}
             </div>
 
@@ -469,44 +509,27 @@ function ComplaintDetail() {
                   <div key={comment.id} className={styles.commentItem}>
                     <div className={styles.commentHeader}>
                       <span className={styles.commentAuthor}>{comment.by}</span>
-                      <span className={styles.commentTime}>{formatDateDDMMYYYY(comment.timestamp)} {new Date(comment.timestamp).toLocaleTimeString()}</span>
+                      <span className={styles.commentTime}>
+                        {formatDateDDMMYYYY(comment.timestamp)} {new Date(comment.timestamp).toLocaleTimeString()}
+                      </span>
                     </div>
-                    <p className={styles.commentText}>
-                      {renderCommentWithMentions(comment.text)}
-                    </p>
+                    <p className={styles.commentText}>{renderCommentWithMentions(comment.text)}</p>
                   </div>
                 ))
               )}
             </div>
 
-            {/* ✅ Comment Input with @mention dropdown */}
             <div className={styles.commentInput}>
               <div className={styles.commentInputWrapper}>
-                <textarea
-                  ref={textareaRef}
+                <textarea ref={textareaRef}
                   placeholder="Add a comment... Type @ to mention someone"
-                  value={newComment}
-                  onChange={handleCommentChange}
-                  onKeyDown={handleKeyDown}
-                  rows="3"
-                />
-
-                {/* ✅ @MENTION DROPDOWN */}
+                  value={newComment} onChange={handleCommentChange} onKeyDown={handleKeyDown} rows="3" />
                 {showMentionDropdown && mentionUsers.length > 0 && (
                   <div className={styles.mentionDropdown}>
-                    <div className={styles.mentionDropdownHeader}>
-                      <User size={12} /> Mention a user
-                    </div>
+                    <div className={styles.mentionDropdownHeader}><User size={12} /> Mention a user</div>
                     {mentionUsers.map(user => (
-                      <button
-                        key={user.id}
-                        className={styles.mentionOption}
-                        onClick={() => selectMention(user)}
-                        type="button"
-                      >
-                        <div className={styles.mentionAvatar}>
-                          {user.name?.charAt(0).toUpperCase()}
-                        </div>
+                      <button key={user.id} className={styles.mentionOption} onClick={() => selectMention(user)} type="button">
+                        <div className={styles.mentionAvatar}>{user.name?.charAt(0).toUpperCase()}</div>
                         <div>
                           <span className={styles.mentionName}>{user.name}</span>
                           <span className={styles.mentionDept}>{user.department}</span>
@@ -517,11 +540,8 @@ function ComplaintDetail() {
                   </div>
                 )}
               </div>
-
               <div className={styles.commentActions}>
-                <span className={styles.commentHint}>
-                  @ mention • Enter to send • Shift+Enter new line
-                </span>
+                <span className={styles.commentHint}>@ mention • Enter to send • Shift+Enter new line</span>
                 <button className={styles.sendBtn} onClick={addComment} disabled={!newComment.trim() || isSending}>
                   <Send size={16} /> {isSending ? 'Sending...' : 'Send'}
                 </button>
@@ -530,7 +550,7 @@ function ComplaintDetail() {
           </div>
         )}
 
-        {/* HISTORY */}
+        {/* HISTORY TAB */}
         {activeTab === 'history' && (
           <div className={styles.historySection}>
             <div className={styles.timeline}>
@@ -547,7 +567,7 @@ function ComplaintDetail() {
           </div>
         )}
 
-        {/* REASSIGN LOG */}
+        {/* REASSIGN LOG TAB */}
         {activeTab === 'reassign' && (
           <div className={styles.historySection}>
             <div className={styles.timeline}>
@@ -562,7 +582,9 @@ function ComplaintDetail() {
                         <span>To: <strong>{entry.toUser}</strong> ({entry.toDept})</span>
                       </div>
                       <div className={styles.reassignReason}><label>Reason:</label><p>{entry.reason}</p></div>
-                      <span className={styles.reassignMeta}>By {entry.reassignedBy} • {formatDateDDMMYYYY(entry.timestamp)} {new Date(entry.timestamp).toLocaleTimeString()}</span>
+                      <span className={styles.reassignMeta}>
+                        By {entry.reassignedBy} • {formatDateDDMMYYYY(entry.timestamp)} {new Date(entry.timestamp).toLocaleTimeString()}
+                      </span>
                     </div>
                   </div>
                 </div>
