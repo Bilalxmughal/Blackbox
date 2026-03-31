@@ -272,3 +272,86 @@ export const getComplaintComments = async (complaintId) => {
     return { success: false, error: error.message };
   }
 };
+
+// ==========================================
+// CLIENTS
+// ==========================================
+
+// Create a new client document
+export const createClient = async (clientData) => {
+  try {
+    const clientWithTimestamp = {
+      ...clientData,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+    const docRef = await addDoc(collection(db, "clients"), clientWithTimestamp);
+    console.log("Client created with Firebase ID:", docRef.id);
+    return { success: true, id: docRef.id, data: clientWithTimestamp };
+  } catch (error) {
+    console.error("Error creating client:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get all clients
+export const getAllClients = async () => {
+  try {
+    const q = query(collection(db, "clients"), orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+    const clients = [];
+    querySnapshot.forEach((doc) => {
+      clients.push({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date().toISOString()
+      });
+    });
+    return { success: true, data: clients };
+  } catch (error) {
+    console.error("Error getting clients:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Update a client document
+export const updateClient = async (clientId, updates) => {
+  try {
+    const clientRef = doc(db, "clients", clientId);
+    await updateDoc(clientRef, {
+      ...updates,
+      updatedAt: serverTimestamp()
+    });
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating client:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Delete a client document
+export const deleteClient = async (clientId) => {
+  try {
+    await deleteDoc(doc(db, "clients", clientId));
+    console.log("Client deleted:", clientId);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting client:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get client by ID
+export const getClientById = async (clientId) => {
+  try {
+    const clientRef = doc(db, "clients", clientId);
+    const docSnap = await getDoc(clientRef);
+    if (docSnap.exists()) {
+      return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
+    }
+    return { success: false, error: "Client not found" };
+  } catch (error) {
+    console.error("Error getting client:", error);
+    return { success: false, error: error.message };
+  }
+};

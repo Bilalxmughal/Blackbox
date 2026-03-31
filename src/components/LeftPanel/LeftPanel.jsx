@@ -1,20 +1,30 @@
 import { NavLink } from 'react-router-dom'
 import { 
-  LayoutDashboard, Database, ClipboardList, Settings, Users,
-  ChevronLeft, ChevronRight, LogOut
+  LayoutDashboard, 
+  Database, 
+  ClipboardList, 
+  Settings, 
+  Users,
+  ChevronLeft, 
+  ChevronRight, 
+  LogOut, 
+  Building2,
+  Truck,
+  
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import styles from './LeftPanel.module.css'
 
 const menuItems = [
-  { name: 'Dashboard',        path: '/',          icon: LayoutDashboard },
-  { name: 'Buscaro Ops Data', path: '/ops-data',  icon: Database },
+  { name: 'Dashboard',        path: '/',           icon: LayoutDashboard },
+  { name: 'Buscaro Ops Data', path: '/ops-data',   icon: Database },
   { name: 'Complaint Board',  path: '/complaints', icon: ClipboardList },
   { name: 'User Management',  path: '/users',      icon: Users },
+  { name: 'Clients',          path: '/clients',    icon: Building2 },
+  { name: 'Vendors',          path: '/vendors',    icon: Truck },
   { name: 'Backend Settings', path: '/backend',    icon: Settings },
 ]
 
-// ✅ collapsed + setCollapsed ab props se aate hain
 function LeftPanel({ collapsed, setCollapsed }) {
   const { currentUser, logout } = useAuth()
 
@@ -22,7 +32,7 @@ function LeftPanel({ collapsed, setCollapsed }) {
     <aside className={`${styles.leftPanel} ${collapsed ? styles.collapsed : ''}`}>
       <div className={styles.logoSection}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}></span>
+          <span className={styles.logoIcon}>🚌</span>
           {!collapsed && (
             <div className={styles.logoText}>
               <h1>BusCaro</h1>
@@ -30,7 +40,10 @@ function LeftPanel({ collapsed, setCollapsed }) {
             </div>
           )}
         </div>
-        <button className={styles.collapseBtn} onClick={() => setCollapsed(!collapsed)}>
+        <button 
+          className={styles.collapseBtn} 
+          onClick={() => setCollapsed(!collapsed)}
+        >
           {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
       </div>
@@ -43,7 +56,7 @@ function LeftPanel({ collapsed, setCollapsed }) {
               key={item.path}
               to={item.path}
               end={item.path === '/'}
-              className={({ isActive }) =>
+              className={({ isActive }) => 
                 `${styles.navItem} ${isActive ? styles.active : ''}`
               }
             >

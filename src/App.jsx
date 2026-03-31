@@ -8,6 +8,12 @@ import ComplaintBoard from './pages/ComplaintBoard/ComplaintBoard'
 import ComplaintDetail from './pages/ComplaintDetail/ComplaintDetail'
 import BackendSettings from './pages/BackendSettings/BackendSettings'
 import UserManagement from './pages/UserManagement/UserManagement'
+import ClientForm from './pages/Clients/ClientForm'
+import Clients from './pages/Clients/Clients'
+import ClientView from './pages/Clients/ClientView'
+import Vendors from './pages/Vendors/Vendors'
+import VendorForm from './pages/Vendors/VendorForm'
+import VendorView from './pages/Vendors/VendorView'
 
 function PrivateRoute({ children }) {
   const { isAuthenticated } = useAuth()
@@ -31,6 +37,14 @@ function App() {
             <Route path="complaints/:id" element={<ComplaintDetail />} />
             <Route path="backend" element={<BackendSettings />} />
             <Route path="users" element={<UserManagement />} />
+            <Route path="clients" element={<Clients />} />
+            <Route path="clients/new" element={<ClientForm />} />
+            <Route path="clients/edit/:id" element={<ClientForm />} />
+            <Route path="clients/:id" element={<ClientView />} /> 
+            <Route path="vendors" element={<Vendors />} />
+            <Route path="vendors/new" element={<VendorForm />} />
+            <Route path="vendors/edit/:id" element={<VendorForm />} />
+            <Route path="vendors/:id" element={<VendorView />} />
           </Route>
         </Routes>
       </BrowserRouter>
