@@ -43,7 +43,7 @@ function UserManagement() {
       const savedUsers = localStorage.getItem('users')
       const savedDepts = localStorage.getItem('departments')
 
-      // Step 1: Load localStorage immediately
+      // Step 1: Load localStorage immediately for fast UI
       let localUsers = []
       if (savedUsers) {
         try {
@@ -64,14 +64,11 @@ function UserManagement() {
       setDepartments(savedDepts ? JSON.parse(savedDepts) : defaultDepartments)
       setRequests(getPendingRequests())
 
-      // Step 2: Sync from Firebase
-      // ✅ KEY FIX: Match local users by email and store their Firebase doc ID as firebaseId
-      // This is what makes edit/delete/password-reset work correctly in Firebase
+      // Step 2: Match local users by email and store Firebase doc ID as firebaseId
       try {
         const res = await getAllUsers()
         if (res.success && res.data.length > 0) {
-          const firebaseUsers = res.data  // each has id = Firebase doc ID
-
+          const firebaseUsers = res.data
           let updated = [...localUsers]
           let changed = false
 
@@ -79,18 +76,12 @@ function UserManagement() {
             const localIndex = updated.findIndex(
               u => u.email?.toLowerCase() === fbUser.email?.toLowerCase()
             )
-
             if (localIndex !== -1) {
-              // User exists locally — store their Firebase doc ID if not already stored
               if (!updated[localIndex].firebaseId) {
-                updated[localIndex] = { 
-                  ...updated[localIndex], 
-                  firebaseId: fbUser.id  // ← Firebase doc ID stored here
-                }
+                updated[localIndex] = { ...updated[localIndex], firebaseId: fbUser.id }
                 changed = true
               }
             } else {
-              // New user from Firebase not in localStorage — add them
               updated.push({ ...fbUser, firebaseId: fbUser.id })
               changed = true
             }
@@ -109,19 +100,22 @@ function UserManagement() {
     loadData()
   }, [])
 
-  // ✅ Get Firebase doc ID — uses firebaseId if stored, else queries Firebase by email
+  // ✅ FIX 1: saveUsers was missing — used everywhere but never defined
+  const saveUsers = (updated) => {
+    setUsers(updated)
+    localStorage.setItem('users', JSON.stringify(updated))
+  }
+
+  // ✅ FIX 2: getFirebaseId was missing — used in toggleStatus and deleteUser
+  const getFirebaseId = (user) => user.firebaseId || user.id
+
+  // Resolve Firebase doc ID — uses stored firebaseId OR queries Firebase by email as fallback
   const resolveFirebaseId = async (user) => {
-    // If firebaseId is already stored locally, use it directly
-    if (user.firebaseId) {
-      console.log('Using stored firebaseId:', user.firebaseId)
-      return user.firebaseId
-    }
-    // Fallback: query Firebase by email to find the correct document ID
-    console.log('firebaseId missing — looking up by email:', user.email)
+    if (user.firebaseId) return user.firebaseId
+
     const res = await getUserByEmail(user.email)
     if (res.success) {
-      console.log('Found Firebase doc by email:', res.id)
-      // Store the firebaseId locally so future edits don't need to query again
+      // Cache it locally so future calls don't need to query again
       const updatedUsers = JSON.parse(localStorage.getItem('users') || '[]')
       const idx = updatedUsers.findIndex(u => u.email?.toLowerCase() === user.email?.toLowerCase())
       if (idx !== -1) {
@@ -135,8 +129,7 @@ function UserManagement() {
     return null
   }
 
-  // If the edited user is the currently logged-in user, refresh their session
-  // This prevents auto-logout caused by stale data in localStorage
+  // Refresh currentUser session if editing the logged-in user — prevents auto-logout
   const syncCurrentUserSession = (updatedUser) => {
     const session = localStorage.getItem('currentUser')
     if (!session) return
@@ -171,7 +164,7 @@ function UserManagement() {
     })
   }, [users, searchTerm, filterRole, filterStatus, filterDept])
 
-  // Stats for the header cards
+  // Stats for header cards
   const stats = useMemo(() => ({
     total: users.length,
     active: users.filter(u => u.status === 'active').length,
@@ -184,7 +177,6 @@ function UserManagement() {
     }
   }), [users])
 
-  // Open Add modal with blank form
   const openAddModal = () => {
     setModalMode('add')
     setFormData({
@@ -195,15 +187,12 @@ function UserManagement() {
     setShowModal(true)
   }
 
-  // Open Edit modal pre-filled with user data
   const openEditModal = (user) => {
     setSelectedUser(user)
     setModalMode('edit')
     setFormData({
-      name: user.name || '',
-      email: user.email || '',
-      phone: user.phone || '',
-      password: '',
+      name: user.name || '', email: user.email || '',
+      phone: user.phone || '', password: '',
       department: user.department || '',
       role: user.role || 'user',
       status: user.status || 'active',
@@ -212,7 +201,6 @@ function UserManagement() {
     setShowModal(true)
   }
 
-  // Open View modal (read-only)
   const openViewModal = (user) => {
     setSelectedUser(user)
     setModalMode('view')
@@ -224,7 +212,7 @@ function UserManagement() {
     setSelectedUser(null)
   }
 
-  // Handle both Add and Edit submissions
+  // Handle Add and Edit form submissions
   const handleSubmit = () => {
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill all required fields')
@@ -237,7 +225,6 @@ function UserManagement() {
         return
       }
 
-      // OPS users send approval request
       if (currentUser?.role === 'ops') {
         savePendingRequest({
           type: 'add_user', data: formData,
@@ -248,7 +235,7 @@ function UserManagement() {
         return
       }
 
-      // Save locally first for instant UI
+      // Save locally first for instant UI response
       const newUser = {
         id: `user-${Date.now()}`,
         name: formData.name,
@@ -265,7 +252,7 @@ function UserManagement() {
       const updatedUsers = [...users, newUser]
       saveUsers(updatedUsers)
 
-      // ✅ Sync to Firebase and store returned Firebase doc ID as firebaseId
+      // Sync to Firebase in background — store returned doc ID as firebaseId
       setTimeout(() => {
         createUserInFirebase(newUser).then(result => {
           if (result.success) {
@@ -273,7 +260,7 @@ function UserManagement() {
               u.id === newUser.id ? { ...u, firebaseId: result.id } : u
             )
             saveUsers(finalUsers)
-            console.log('User synced to Firebase with ID:', result.id)
+            console.log('User synced to Firebase:', result.id)
           }
         }).catch(err => console.error('Firebase create failed:', err))
       }, 0)
@@ -298,57 +285,44 @@ function UserManagement() {
         return
       }
 
-      // Fields to update
       const updatedFields = {
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        department: formData.department,
-        role: formData.role,
-        status: formData.status,
+        name: formData.name, email: formData.email,
+        phone: formData.phone, department: formData.department,
+        role: formData.role, status: formData.status,
         ...(formData.resetPassword && formData.password && { password: formData.password })
       }
 
-      // Apply locally
       const updated = users.map(u =>
         u.id === selectedUser.id ? { ...u, ...updatedFields } : u
       )
       saveUsers(updated)
-
-      // Refresh session if editing currently logged-in user
       syncCurrentUserSession({ ...selectedUser, ...updatedFields })
 
-      // ✅ Sync to Firebase using correct Firebase doc ID
-      const firebaseDocId = getFirebaseId(selectedUser)
-      console.log('Updating Firebase doc:', firebaseDocId)
-
-      if (firebaseDocId) {
-        setTimeout(() => {
-          const firebaseUpdates = {
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            department: formData.department,
-            role: formData.role,
-            status: formData.status
-          }
-          if (formData.resetPassword && formData.password) {
-            firebaseUpdates.password = formData.password
-          }
-          updateUserInFirebase(firebaseDocId, firebaseUpdates)
-            .then(() => console.log('Firebase updated successfully'))
-            .catch(err => console.error('Firebase update failed:', err))
-        }, 0)
-      } else {
-        console.warn('No Firebase ID found for user:', selectedUser.email)
-      }
+      // Sync to Firebase — resolve correct doc ID first
+      resolveFirebaseId(selectedUser).then(firebaseDocId => {
+        if (!firebaseDocId) {
+          console.error('Firebase ID not found for:', selectedUser.email)
+          return
+        }
+        const firebaseUpdates = {
+          name: formData.name, email: formData.email,
+          phone: formData.phone, department: formData.department,
+          role: formData.role, status: formData.status
+        }
+        if (formData.resetPassword && formData.password) {
+          firebaseUpdates.password = formData.password
+        }
+        updateUserInFirebase(firebaseDocId, firebaseUpdates)
+          .then(() => console.log('Firebase updated for:', firebaseDocId))
+          .catch(err => console.error('Firebase update failed:', err))
+      })
 
       alert('User updated successfully!')
       closeModal()
     }
   }
 
-  // Toggle active / inactive status
+  // Toggle user between active and inactive
   const toggleStatus = (user) => {
     if (currentUser?.role === 'ops') {
       savePendingRequest({
@@ -364,38 +338,37 @@ function UserManagement() {
     const newStatus = user.status === 'active' ? 'inactive' : 'active'
     saveUsers(users.map(u => u.id === user.id ? { ...u, status: newStatus } : u))
 
-    const firebaseDocId = getFirebaseId(user)
-    if (firebaseDocId) {
-      setTimeout(() => {
+    resolveFirebaseId(user).then(firebaseDocId => {
+      if (firebaseDocId) {
         updateUserInFirebase(firebaseDocId, { status: newStatus })
           .catch(err => console.error('Firebase status update failed:', err))
-      }, 0)
-    }
+      }
+    })
   }
 
-  // Permanently delete user
+  // Permanently delete a user
   const deleteUser = (user) => {
     if (!canDeleteUser(user)) { alert('You cannot delete this user!'); return }
 
     if (confirm(`Are you sure you want to delete ${user.name}?`)) {
       saveUsers(users.filter(u => u.id !== user.id))
 
-      const firebaseDocId = getFirebaseId(user)
-      if (firebaseDocId) {
-        setTimeout(() => {
+      resolveFirebaseId(user).then(firebaseDocId => {
+        if (firebaseDocId) {
           deleteUserFromFirebase(firebaseDocId)
             .catch(err => console.error('Firebase delete failed:', err))
-        }, 0)
-      }
+        }
+      })
     }
   }
 
   // Export filtered users as CSV
   const exportUsers = () => {
     const csv = [
-      ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Created'].join(','),
+      ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Last Login', 'Created'].join(','),
       ...filteredUsers.map(u => [
         u.name, u.email, u.phone, u.department, u.role, u.status,
+        u.lastLogin ? new Date(u.lastLogin).toLocaleDateString() : 'Never',
         new Date(u.createdAt).toLocaleDateString()
       ].join(','))
     ].join('\n')
@@ -406,6 +379,21 @@ function UserManagement() {
     a.href = url
     a.download = `users_${new Date().toISOString().split('T')[0]}.csv`
     a.click()
+  }
+
+  // Format last login for display
+  const formatLastLogin = (lastLogin) => {
+    if (!lastLogin) return <span style={{ color: '#ccc', fontSize: 12 }}>Never</span>
+    const date = new Date(lastLogin)
+    const now = new Date()
+    const diffMs = now - date
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 60) return <span style={{ color: '#4caf50', fontSize: 12 }}>{diffMins}m ago</span>
+    if (diffHours < 24) return <span style={{ color: '#ff9800', fontSize: 12 }}>{diffHours}h ago</span>
+    return <span style={{ color: '#888', fontSize: 12 }}>{diffDays}d ago</span>
   }
 
   return (
@@ -444,8 +432,22 @@ function UserManagement() {
       <div className={styles.filtersBar}>
         <div className={styles.searchBox}>
           <Search size={18} />
-          <input type="text" placeholder="Search users..." value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)} />
+          {/* ✅ FIX 3: autoComplete="off" — browser autofill search box mein value bharta tha */}
+          <input
+            type="text"
+            placeholder="Search users..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            autoComplete="off"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '2px 4px' }}
+            >
+              ×
+            </button>
+          )}
         </div>
         <div className={styles.filterGroup}>
           <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
@@ -471,8 +473,13 @@ function UserManagement() {
         <table className={styles.usersTable}>
           <thead>
             <tr>
-              <th>User</th><th>Contact</th><th>Department</th>
-              <th>Role</th><th>Status</th><th>Created</th><th>Actions</th>
+              <th>User</th>
+              <th>Contact</th>
+              <th>Department</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Last Login</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -495,22 +502,32 @@ function UserManagement() {
                   </span>
                 </td>
                 <td>
-                  <button className={`${styles.statusToggle} ${styles[user.status]}`}
-                    onClick={() => toggleStatus(user)} disabled={!canEditUser(user)}>
+                  <button
+                    className={`${styles.statusToggle} ${styles[user.status]}`}
+                    onClick={() => toggleStatus(user)}
+                    disabled={!canEditUser(user)}
+                  >
                     {user.status === 'active'
                       ? <><UserCheck size={14} /> Active</>
                       : <><UserX size={14} /> Inactive</>}
                   </button>
                 </td>
-                <td className={styles.dateCell}>{new Date(user.createdAt).toLocaleDateString()}</td>
+                {/* ✅ ADVANCED: Last login shown in table */}
+                <td>{formatLastLogin(user.lastLogin)}</td>
                 <td>
                   <div className={styles.actionButtons}>
-                    <button className={styles.actionBtn} onClick={() => openViewModal(user)} title="View"><Eye size={16} /></button>
+                    <button className={styles.actionBtn} onClick={() => openViewModal(user)} title="View">
+                      <Eye size={16} />
+                    </button>
                     {canEditUser(user) && (
-                      <button className={styles.actionBtn} onClick={() => openEditModal(user)} title="Edit"><Edit2 size={16} /></button>
+                      <button className={styles.actionBtn} onClick={() => openEditModal(user)} title="Edit">
+                        <Edit2 size={16} />
+                      </button>
                     )}
                     {canDeleteUser(user) && (
-                      <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(user)} title="Delete"><Trash2 size={16} /></button>
+                      <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(user)} title="Delete">
+                        <Trash2 size={16} />
+                      </button>
                     )}
                   </div>
                 </td>
@@ -519,7 +536,10 @@ function UserManagement() {
           </tbody>
         </table>
         {filteredUsers.length === 0 && (
-          <div className={styles.emptyState}><Users size={48} color="#ddd" /><p>No users found</p></div>
+          <div className={styles.emptyState}>
+            <Users size={48} color="#ddd" />
+            <p>No users found</p>
+          </div>
         )}
       </div>
 
@@ -553,6 +573,10 @@ function UserManagement() {
                     <span className={styles[selectedUser?.status]}>{selectedUser?.status?.toUpperCase()}</span>
                   </div>
                   <div className={styles.detailRow}>
+                    <label>Last Login</label>
+                    <span>{selectedUser?.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : 'Never'}</span>
+                  </div>
+                  <div className={styles.detailRow}>
                     <label>Created</label>
                     <span>{new Date(selectedUser?.createdAt).toLocaleString()}</span>
                   </div>
@@ -561,24 +585,30 @@ function UserManagement() {
                 <div className={styles.formGrid}>
                   <div className={styles.formGroup}>
                     <label>Full Name *</label>
-                    <input type="text" value={formData.name}
+                    <input type="text" value={formData.name} autoComplete="off"
                       onChange={(e) => setFormData({...formData, name: e.target.value})} />
                   </div>
                   <div className={styles.formGroup}>
                     <label>Email *</label>
-                    <input type="email" value={formData.email}
+                    {/* ✅ ADVANCED: Warning when editing email of existing user */}
+                    {modalMode === 'edit' && formData.email !== selectedUser?.email && (
+                      <small style={{ color: '#ff9800', display: 'block', marginBottom: 4 }}>
+                        ⚠️ Changing email will affect login credentials
+                      </small>
+                    )}
+                    <input type="email" value={formData.email} autoComplete="off"
                       onChange={(e) => setFormData({...formData, email: e.target.value})} />
                   </div>
                   <div className={styles.formGroup}>
                     <label>Phone Number *</label>
-                    <input type="tel" value={formData.phone}
+                    <input type="tel" value={formData.phone} autoComplete="off"
                       onChange={(e) => setFormData({...formData, phone: e.target.value})} />
                   </div>
 
                   {modalMode === 'add' && (
                     <div className={styles.formGroup}>
                       <label>Password *</label>
-                      <input type="password" value={formData.password}
+                      <input type="password" value={formData.password} autoComplete="new-password"
                         onChange={(e) => setFormData({...formData, password: e.target.value})}
                         placeholder="Leave empty for default (password123)" />
                     </div>
@@ -599,7 +629,9 @@ function UserManagement() {
                       disabled={!canChangeRole}>
                       {Object.values(ROLES).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
-                    {!canChangeRole && <small className={styles.hint}>Only Super Admin can change roles</small>}
+                    {!canChangeRole && (
+                      <small className={styles.hint}>Only Super Admin can change roles</small>
+                    )}
                   </div>
 
                   {modalMode === 'edit' && (
@@ -618,7 +650,8 @@ function UserManagement() {
                           <label className={styles.resetLabel}>
                             <input type="checkbox" checked={formData.resetPassword}
                               onChange={(e) => setFormData({
-                                ...formData, resetPassword: e.target.checked,
+                                ...formData,
+                                resetPassword: e.target.checked,
                                 password: e.target.checked ? formData.password : ''
                               })} />
                             <Key size={16} />
@@ -630,10 +663,12 @@ function UserManagement() {
                       {formData.resetPassword && (
                         <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
                           <label>New Password *</label>
-                          <input type="password" value={formData.password}
+                          <input type="password" value={formData.password} autoComplete="new-password"
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
                             placeholder="Enter new password" required />
-                          <small className={styles.hint}>User will need to login with this new password</small>
+                          <small className={styles.hint}>
+                            User will need to login with this new password
+                          </small>
                         </div>
                       )}
                     </>
