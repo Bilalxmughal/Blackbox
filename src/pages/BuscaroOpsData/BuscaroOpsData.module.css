@@ -21,7 +21,7 @@
 
 .pageTitle {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   color: #0f172a;
   margin: 0 0 4px;
   letter-spacing: -0.3px;
@@ -117,7 +117,7 @@
 
 .statNum {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   margin-bottom: 4px;
 }
@@ -161,7 +161,7 @@
 
 .sectionTitle {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 800;
   color: #0f172a;
   margin: 0;
 }
@@ -373,7 +373,7 @@
 .dataTable th {
   padding: 12px 10px;
   text-align: left;
-  color: #64748b;
+  color: #223d63;
   font-weight: 600;
   font-size: 10px;
   text-transform: uppercase;
@@ -420,23 +420,23 @@
 }
 
 .mainRow:hover {
-  background: #fafbfc;
+  background: #ffeae1;
 }
 
 .numericCell {
   font-family: 'SF Mono', monospace;
-  font-weight: 600;
+  font-weight: 500;
   color: #0f172a;
 }
 
 .currencyCell {
   color: #0891b2;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .marginCell {
   color: #16a34a;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .marginCell.negative {
@@ -474,7 +474,7 @@
 
 .expandedRow td {
   padding: 0;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #f97316;
 }
 
 .expandedContent {
@@ -495,13 +495,13 @@
 .detailsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  gap: 5px;
   padding: 20px;
 }
 
 .detailItem {
   background: #fff;
-  padding: 14px 16px;
+  padding: 5px 16px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
   transition: all 0.2s;
@@ -514,19 +514,20 @@
 
 .detailItem label {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 6px;
   font-weight: 600;
+  color: #0f172a;
 }
 
 .detailItem span {
-  font-size: 13px;
-  color: #0f172a;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   word-break: break-word;
+  color: #94a3b8;
 }
 
 /* ── EMPTY STATE ── */
@@ -538,7 +539,7 @@
 
 .emptyState p {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 400;
   color: #64748b;
   margin: 16px 0 4px;
 }
@@ -601,7 +602,7 @@
   }
   
   .dataTable {
-    font-size: 11px;
+    font-size: 12px;
   }
   
   .dataTable th,
