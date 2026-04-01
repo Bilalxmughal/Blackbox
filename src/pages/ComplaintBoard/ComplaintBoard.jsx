@@ -472,7 +472,7 @@ function ComplaintBoard() {
       <div className={styles.header}>
         <div>
           <h1>Complaint Board</h1>
-          <p>Manage and track all complaints & tickets (Firebase Connected)</p>
+          <p>Manage and track all complaints & tickets</p>
         </div>
         <button className={styles.addBtn} onClick={() => setShowAddModal(true)} disabled={loading}>
           <Plus size={20} /> Add Complaint
@@ -501,13 +501,13 @@ function ComplaintBoard() {
         </div>
       </div>
 
-      <div className={styles.filtersBar}>
-        <div className={styles.searchBox}>
+        
+        <div className={styles.filterGroup}>
+          <div className={styles.searchBox}>
           <Search size={18} />
           <input type="text" placeholder="Search tickets, comments..." value={filters.search}
             onChange={(e) => setFilters({...filters, search: e.target.value})} />
         </div>
-        <div className={styles.filterGroup}>
           <select value={filters.department} onChange={(e) => setFilters({...filters, department: e.target.value})}>
             <option value="all">All Departments</option>
             {filterOptions.deptNames.map(d => <option key={d} value={d}>{d}</option>)}
@@ -520,9 +520,7 @@ function ComplaintBoard() {
             <option value="all">All Status</option>
             {Object.values(TICKET_STATUS).map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-
-          <div className={styles.secondaryFilters}>
-            <div className={styles.dateFilter}>
+          <div className={styles.dateFilter}>
               <Calendar size={16} />
               <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({...filters, dateFrom: e.target.value})} />
               <span>to</span>
@@ -534,14 +532,12 @@ function ComplaintBoard() {
                 <option value="all">All Companies</option>
                 {filterOptions.companies.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
+              <button className={styles.clearBtn} onClick={() => setFilters({
+              search: '', department: 'all', assignedTo: 'all', status: 'all', company: 'all', dateFrom: '', dateTo: ''
+               })}>Clear</button>
             </div>
-          </div>
         </div>
 
-        <button className={styles.clearBtn} onClick={() => setFilters({
-          search: '', department: 'all', assignedTo: 'all', status: 'all', company: 'all', dateFrom: '', dateTo: ''
-        })}>Clear</button>
-      </div>
 
       <div className={styles.tableContainer}>
         <table className={styles.complaintsTable}>

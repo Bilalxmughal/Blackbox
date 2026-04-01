@@ -1,4 +1,14 @@
+/* ============================================
+   CATEGORIES MANAGEMENT - Orange Theme 2026
+   Matches Dashboard & LeftPanel styling
+   ============================================ */
+
 .container {
+  padding: 24px 28px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background: #f5f6fa;
+  min-height: 100vh;
   animation: fadeIn 0.3s ease;
 }
 
@@ -7,73 +17,110 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ── SECTION HEADER ── */
 .sectionHeader {
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .sectionHeader h2 {
-  color: #1a1a2e;
-  font-size: 20px;
-  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
 }
 
 .sectionHeader p {
-  color: #888;
-  font-size: 13px;
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
 }
 
+/* ── ADD SECTION ── */
 .addSection {
-  background: #f8f9fa;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
+  background: #fff;
+  padding: 24px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .addSection h3 {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 12px;
+  gap: 10px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 16px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-weight: 700;
+}
+
+.addSection h3 svg {
+  color: #f97316;
 }
 
 .inlineForm {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .inlineForm input,
 .inlineForm select {
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
   font-size: 14px;
   flex: 1;
+  min-width: 200px;
+  color: #334155;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+
+.inlineForm input:hover,
+.inlineForm select:hover {
+  border-color: #cbd5e1;
 }
 
 .inlineForm input:focus,
 .inlineForm select:focus {
   outline: none;
-  border-color: #00d4ff;
+  border-color: #f97316;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.inlineForm input::placeholder {
+  color: #94a3b8;
 }
 
 .addBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 12px 20px;
-  background: #6bcf7f;
-  color: white;
-  border-radius: 8px;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #16a34a;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addBtn:hover:not(:disabled) {
+  background: #15803d;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.3);
 }
 
 .addBtn:disabled {
@@ -81,48 +128,70 @@
   cursor: not-allowed;
 }
 
+/* ── CATEGORIES LIST ── */
 .categoriesList h3 {
-  color: #1a1a2e;
+  color: #0f172a;
   font-size: 16px;
-  margin-bottom: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
+.categoriesList h3 svg {
+  color: #f97316;
+}
+
+/* ── CATEGORY CARD ── */
 .categoryCard {
-  background: white;
-  border: 2px solid #f0f0f0;
-  border-radius: 12px;
-  margin-bottom: 12px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  margin-bottom: 16px;
   overflow: hidden;
-  transition: all 0.2s;
+  transition: all 0.25s;
 }
 
 .categoryCard:hover {
-  border-color: #e0e0e0;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
+/* Category Header */
 .catHeader {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: white;
+  background: #fff;
 }
 
 .expandBtn {
-  width: 32px;
-  height: 32px;
-  background: #f8f9fa;
-  color: #666;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  background: #f8fafc;
+  color: #64748b;
+  border: none;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .expandBtn:hover {
-  background: #00d4ff;
-  color: white;
+  background: #f97316;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.expandBtn.active {
+  background: #f97316;
+  color: #fff;
+  transform: rotate(180deg);
 }
 
 .catInfo {
@@ -130,29 +199,39 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .codeBadge {
-  background: #00d4ff;
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
+  background: #f97316;
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 700;
+  font-family: 'SF Mono', monospace;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
 }
 
 .catInfo h4 {
-  color: #1a1a2e;
+  color: #0f172a;
   font-size: 15px;
   font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .subCount {
-  font-size: 12px;
-  color: #888;
-  background: #f0f0f0;
-  padding: 4px 10px;
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 12px;
   border-radius: 20px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .catActions {
@@ -162,83 +241,171 @@
 
 .iconBtn,
 .iconBtnDanger {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
 .iconBtn {
-  background: #ffd93d20;
-  color: #b8860b;
+  background: #fff4ed;
+  color: #f97316;
 }
 
 .iconBtn:hover {
-  background: #ffd93d;
+  background: #f97316;
+  color: #fff;
+  transform: scale(1.05);
 }
 
 .iconBtnDanger {
-  background: #ff6b6b20;
-  color: #ff6b6b;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .iconBtnDanger:hover {
-  background: #ff6b6b;
-  color: white;
+  background: #dc2626;
+  color: #fff;
+  transform: scale(1.05);
 }
 
+/* Edit Form */
 .editForm {
   flex: 1;
   display: flex;
   gap: 10px;
+  align-items: center;
 }
 
 .editForm input {
-  padding: 8px 12px;
-  border: 2px solid #00d4ff;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border: 1.5px solid #f97316;
+  border-radius: 8px;
   font-size: 14px;
+  color: #334155;
+  flex: 1;
+  min-width: 0;
 }
 
-/* Sub-categories */
+.editForm input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+/* ── SUB-CATEGORIES ── */
 .subCategories {
   padding: 0 20px 20px;
-  background: #f8f9fa;
-  border-top: 1px solid #f0f0f0;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  animation: slideDown 0.25s ease;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .noSub {
-  padding: 20px;
+  padding: 24px;
   text-align: center;
-  color: #aaa;
+  color: #94a3b8;
   font-size: 13px;
+  font-style: italic;
 }
 
+/* Add Sub-category */
+.addSubSection {
+  padding: 16px 0;
+  border-bottom: 1px dashed #e2e8f0;
+  margin-bottom: 12px;
+}
+
+.addSubForm {
+  display: flex;
+  gap: 10px;
+}
+
+.addSubForm input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #334155;
+  background: #fff;
+  transition: all 0.2s;
+}
+
+.addSubForm input:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.addSubBtn {
+  padding: 10px 18px;
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addSubBtn:hover:not(:disabled) {
+  background: #ea580c;
+  transform: translateY(-1px);
+}
+
+.addSubBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Sub-item */
 .subItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  background: white;
-  border-radius: 8px;
-  margin-top: 8px;
-  border: 1px solid #e0e0e0;
+  padding: 14px 18px;
+  background: #fff;
+  border-radius: 10px;
+  margin-top: 10px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.subItem:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .subName {
-  color: #444;
+  color: #334155;
   font-size: 14px;
+  font-weight: 500;
 }
 
 .subEditInput {
   flex: 1;
-  padding: 8px 12px;
-  border: 2px solid #00d4ff;
-  border-radius: 6px;
+  padding: 10px 14px;
+  border: 1.5px solid #f97316;
+  border-radius: 8px;
   font-size: 14px;
+  color: #334155;
+  margin-right: 10px;
+}
+
+.subEditInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
 }
 
 .subActions {
@@ -248,30 +415,123 @@
 
 .subBtn,
 .subBtnDanger {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .subBtn {
-  background: #f0f0f0;
-  color: #666;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .subBtn:hover {
-  background: #ffd93d;
-  color: white;
+  background: #f97316;
+  color: #fff;
 }
 
 .subBtnDanger {
-  background: #ff6b6b20;
-  color: #ff6b6b;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .subBtnDanger:hover {
-  background: #ff6b6b;
-  color: white;
+  background: #dc2626;
+  color: #fff;
 }
+
+/* ── EMPTY STATE ── */
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+}
+
+.emptyState svg {
+  margin-bottom: 16px;
+  color: #e2e8f0;
+}
+
+.emptyState h4 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.emptyState p {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .sectionHeader h2 {
+    font-size: 20px;
+  }
+  
+  .inlineForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .inlineForm input,
+  .inlineForm select {
+    min-width: auto;
+  }
+  
+  .addBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .catHeader {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .catInfo {
+    flex: 1 1 100%;
+    order: 3;
+    margin-top: 8px;
+  }
+  
+  .catActions {
+    margin-left: auto;
+  }
+  
+  .editForm {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .editForm input {
+    width: 100%;
+  }
+  
+  .subItem {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  
+  .subEditInput {
+    width: 100%;
+    margin-right: 0;
+  }
+  
+  .subActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 import styles from './DataTable.module.css'
 
+
 function DataTable({ columns, data, rowsPerPage = 10 }) {
   const [currentPage, setCurrentPage] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')

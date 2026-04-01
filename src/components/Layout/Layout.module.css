@@ -1,64 +1,241 @@
+/* ============================================
+   LAYOUT - Orange Theme 2026
+   Matches Dashboard & LeftPanel styling
+   ============================================ */
+
 .layout {
   display: flex;
   min-height: 100vh;
   width: 100%;
+  background: #f5f6fa;
 }
 
 .mainContent {
-  margin-left: 260px;
-  width: calc(100% - 260px);
+  margin-left: 265px;
+  width: calc(100% - 265px);
   min-width: 0;
-  transition: margin-left 0.3s ease, width 0.3s ease;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow-x: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ✅ Collapsed hone pe margin aur width adjust */
+/* ✅ Collapsed state */
 .sidebarCollapsed .mainContent {
   margin-left: 70px;
   width: calc(100% - 70px);
 }
 
+/* ── TOP HEADER ── */
 .topHeader {
-  background: white;
-  padding: 20px 30px;
+  background: #fff;
+  padding: 16px 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border-bottom: 1px solid #e2e8f0;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 50;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .topHeader h2 {
   margin: 0;
-  color: #1a1a2e;
-  font-size: 20px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
-.userInfo {
+/* Breadcrumb */
+.breadcrumb {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
 }
 
-.userAvatar {
-  width: 35px;
-  height: 35px;
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.breadcrumb a {
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb a:hover {
+  color: #f97316;
+}
+
+.breadcrumb .current {
+  color: #0f172a;
   font-weight: 600;
 }
 
+/* ── USER INFO ── */
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.userDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.userRole {
+  font-size: 11px;
+  color: #f97316;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.userAvatar {
+  width: 36px;
+  height: 36px;
+  background: #f97316;
+  color: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.25);
+}
+
+/* Notification bell */
+.notificationBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.notificationBtn:hover {
+  background: #fff4ed;
+  border-color: #fed7aa;
+  color: #f97316;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 18px;
+  height: 18px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+}
+
+/* ── CONTENT AREA ── */
 .content {
   flex: 1;
-  padding: 30px;
+  padding: 24px 28px;
   overflow-x: hidden;
   width: 100%;
   box-sizing: border-box;
+}
+
+/* Page title section */
+.pageHeader {
+  margin-bottom: 24px;
+}
+
+.pageHeader h1 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+  letter-spacing: -0.3px;
+}
+
+.pageHeader p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.pageHeader p strong {
+  color: #f97316;
+  font-weight: 600;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .mainContent {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .sidebarCollapsed .mainContent {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .topHeader {
+    padding: 12px 16px;
+  }
+  
+  .topHeader h2 {
+    font-size: 16px;
+  }
+  
+  .userDetails {
+    display: none;
+  }
+  
+  .content {
+    padding: 16px;
+  }
+  
+  .breadcrumb {
+    display: none;
+  }
+}
+
+/* Mobile sidebar overlay */
+.mobileOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 90;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s;
+}
+
+.mobileOverlay.open {
+  opacity: 1;
+  visibility: visible;
 }

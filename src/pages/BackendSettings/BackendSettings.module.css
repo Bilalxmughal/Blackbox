@@ -1,109 +1,279 @@
+/* ============================================
+   TAB NAVIGATION - Orange Theme 2026
+   Matches Dashboard & LeftPanel styling
+   ============================================ */
+
 .container {
-  padding: 24px;
+  padding: 24px 28px;
   max-width: 1400px;
   margin: 0 auto;
+  background: #f5f6fa;
+  min-height: 100vh;
 }
 
+/* ── HEADER ── */
 .header {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .header h1 {
-  color: #1a1a2e;
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 8px;
+  color: #0f172a;
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
 }
 
 .header p {
-  color: #666;
-  font-size: 15px;
+  color: #64748b;
+  font-size: 14px;
+  margin: 0;
 }
 
-/* Tab Navigation Cards */
+/* ── TAB NAVIGATION CARDS ── */
 .tabNavigation {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 28px;
 }
 
 .tabCard {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 24px;
-  background: white;
-  border: 2px solid #e0e0e0;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
-}
-
-.tabCard:hover {
-  border-color: #00d4ff;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 212, 255, 0.1);
-}
-
-.tabCard.active {
-  border-color: #00d4ff;
-  background: linear-gradient(135deg, #f0fbff 0%, #ffffff 100%);
-}
-
-.tabIcon {
-  width: 56px;
-  height: 56px;
+  padding: 20px 24px;
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
   border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.tabCard::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #f97316;
+  transform: scaleY(0);
+  transition: transform 0.25s;
+}
+
+
+
+.tabCard:hover::before {
+  transform: scaleY(1);
+}
+
+
+.tabCard.active::before {
+  transform: scaleY(1);
+}
+
+/* Tab Icon */
+.tabIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s;
+  background: #f8fafc;
+  color: #64748b;
+  transition: all 0.25s;
+  flex-shrink: 0;
 }
 
+
+.tabCard.active .tabIcon {
+  color: #fff;
+  background: #f97316;
+}
+
+/* Tab Info */
 .tabInfo {
   flex: 1;
+  min-width: 0;
 }
 
 .tabInfo h3 {
-  color: #1a1a2e;
-  font-size: 17px;
-  font-weight: 600;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
   margin-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.tabCard:hover .tabInfo h3 {
+  color: #f97316;
 }
 
 .tabInfo p {
-  color: #888;
+  color: #94a3b8;
   font-size: 13px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
 }
 
+/* Arrow */
 .arrow {
-  color: #ccc;
-  transition: transform 0.3s;
+  color: #cbd5e1;
+  transition: all 0.25s;
+  flex-shrink: 0;
+  
 }
 
-.tabCard.active .arrow {
-  color: #00d4ff;
+.tabCard:hover .arrow {
+  color: #f97316;
   transform: translateX(4px);
 }
 
-/* Content Area */
-.contentArea {
-  background: white;
-  border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-  min-height: 500px;
+.tabCard.active .arrow {
+  transform: translateX(6px);
 }
 
-/* Responsive */
+/* ── CONTENT AREA ── */
+.contentArea {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px;
+  border: 1px solid #ebebeb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  min-height: 500px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Content Header */
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.contentHeader h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.contentHeader p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .tabNavigation {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+  
+  .header h1 {
+    font-size: 22px;
+  }
+  
   .tabNavigation {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .tabCard {
+    padding: 16px 20px;
+  }
+  
+  .tabIcon {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .tabInfo h3 {
+    font-size: 15px;
   }
   
   .contentArea {
     padding: 20px;
+    border-radius: 12px;
   }
+  
+  .contentHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
+/* ── LOADING STATE ── */
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  color: #94a3b8;
+}
+
+.loadingSpinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid #f1f5f9;
+  border-top-color: #f97316;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── EMPTY STATE ── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.emptyState svg {
+  color: #e2e8f0;
+  margin-bottom: 16px;
+}
+
+.emptyState h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.emptyState p {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
 }

@@ -1,3 +1,8 @@
+/* ============================================
+   FORM - Orange Theme 2026
+   Matches Dashboard & LeftPanel styling
+   ============================================ */
+
 .form {
   display: flex;
   flex-direction: column;
@@ -13,73 +18,365 @@
 .formGroup {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .formGroupFull {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
-.formGroup label, .formGroupFull label {
+.formGroup label,
+.formGroupFull label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.formGroup input,
+.formGroup select,
+.formGroup textarea,
+.formGroupFull input,
+.formGroupFull select,
+.formGroupFull textarea {
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #334155;
+  background: #fff;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.formGroup input:hover,
+.formGroup select:hover,
+.formGroup textarea:hover,
+.formGroupFull input:hover,
+.formGroupFull select:hover,
+.formGroupFull textarea:hover {
+  border-color: #cbd5e1;
+}
+
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus,
+.formGroupFull input:focus,
+.formGroupFull select:focus,
+.formGroupFull textarea:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+}
+
+.formGroup input::placeholder,
+.formGroup textarea::placeholder,
+.formGroupFull input::placeholder,
+.formGroupFull textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* Read-only fields */
+.readOnly {
+  background: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+  border-color: #e2e8f0 !important;
+}
+
+.readOnly:focus {
+  box-shadow: none !important;
+}
+
+/* Select dropdown */
+.formGroup select,
+.formGroupFull select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+}
+
+.formGroup select:disabled,
+.formGroupFull select:disabled {
+  background-color: #f8fafc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Textarea */
+.formGroup textarea,
+.formGroupFull textarea {
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.5;
+}
+
+/* Checkbox & Radio */
+.formGroup.checkbox,
+.formGroupFull.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.formGroup.checkbox input[type="checkbox"],
+.formGroupFull.checkbox input[type="checkbox"],
+.formGroup.checkbox input[type="radio"],
+.formGroupFull.checkbox input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #f97316;
+  cursor: pointer;
+}
+
+.formGroup.checkbox label,
+.formGroupFull.checkbox label {
+  margin: 0;
+  text-transform: none;
   font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: #334155;
+  cursor: pointer;
 }
 
-.formGroup input, .formGroupFull textarea {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.2s;
+/* Error state */
+.formGroup.error input,
+.formGroup.error select,
+.formGroup.error textarea,
+.formGroupFull.error input,
+.formGroupFull.error select,
+.formGroupFull.error textarea {
+  border-color: #dc2626;
+  background: #fef2f2;
 }
 
-.formGroup input:focus, .formGroupFull textarea:focus {
-  outline: none;
-  border-color: #00d4ff;
+.formGroup.error input:focus,
+.formGroup.error select:focus,
+.formGroup.error textarea:focus,
+.formGroupFull.error input:focus,
+.formGroupFull.error select:focus,
+.formGroupFull.error textarea:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
-.readOnly {
-  background: #f5f6fa;
-  color: #666;
+.errorText {
+  font-size: 12px;
+  color: #dc2626;
+  font-weight: 500;
+  margin-top: 4px;
 }
 
+/* Helper text */
+.helperText {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* ── FORM ACTIONS ── */
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 15px;
+  gap: 12px;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #f1f5f9;
 }
 
+/* Cancel Button */
 .cancelBtn {
   padding: 12px 24px;
-  background: #f5f6fa;
-  color: #666;
-  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
 .cancelBtn:hover {
-  background: #e0e0e0;
+  background: #e2e8f0;
+  color: #475569;
 }
 
+/* Submit Button */
 .submitBtn {
-  padding: 12px 24px;
-  background: #00d4ff;
-  color: white;
-  border-radius: 8px;
+  padding: 12px 28px;
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
-.submitBtn:hover {
-  background: #00b8d9;
+.submitBtn:hover:not(:disabled) {
+  background: #ea580c;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
+}
+
+.submitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Secondary Button */
+.secondaryBtn {
+  padding: 12px 24px;
+  background: #fff;
+  color: #64748b;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.secondaryBtn:hover {
+  border-color: #f97316;
+  color: #f97316;
+  background: #fff4ed;
+}
+
+/* Danger Button */
+.dangerBtn {
+  padding: 12px 24px;
+  background: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dangerBtn:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* ── FORM SECTIONS ── */
+.formSection {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.formSectionTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .formActions {
+    flex-direction: column-reverse;
+  }
+  
+  .cancelBtn,
+  .submitBtn,
+  .secondaryBtn,
+  .dangerBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ── LOADING STATE ── */
+.formLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+/* ── FIELD ICONS ── */
+.inputWithIcon {
+  position: relative;
+}
+
+.inputWithIcon svg {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  width: 18px;
+  height: 18px;
+}
+
+.inputWithIcon input,
+.inputWithIcon select {
+  padding-left: 44px;
+}
+
+/* Date input */
+input[type="date"],
+input[type="datetime-local"] {
+  font-family: inherit;
+}
+
+/* Number input */
+input[type="number"] {
+  font-family: 'SF Mono', monospace;
+}
+
+/* File upload */
+.fileUpload {
+  border: 2px dashed #e2e8f0;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fileUpload:hover {
+  border-color: #f97316;
+  background: #fff4ed;
+}
+
+.fileUpload svg {
+  color: #f97316;
+  margin-bottom: 12px;
+}
+
+.fileUpload p {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.fileUpload span {
+  color: #94a3b8;
+  font-size: 12px;
 }

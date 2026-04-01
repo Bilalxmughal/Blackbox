@@ -1,30 +1,52 @@
+/* ============================================
+   BUSCARO LEFTPANEL - Orange Theme 2026
+   Matches Dashboard orange accent
+   ============================================ */
+
 .leftPanel {
-  width: 260px;
-  min-width: 260px;      /* Add kiya - don't shrink */
+  width: 265px;
+  min-width: 265px;
   height: 100vh;
-  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  color: white;
+  background: #ffffff;
+  color: #334155;
   display: flex;
   flex-direction: column;
-  position: fixed;       /* Fixed rehne do */
+  position: fixed;
   left: 0;
   top: 0;
-  transition: width 0.3s ease;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 100;
-  overflow-x: hidden;    /* Add kiya */
+  overflow-x: hidden;
+  border-right: 1px solid #e2e8f0;
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.02),
+    4px 0 24px rgba(0,0,0,.03);
 }
 
 .leftPanel.collapsed {
   width: 70px;
-  min-width: 70px;       /* Add kiya */
+  min-width: 70px;
 }
 
+/* ── Logo Section ── */
 .logoSection {
-  padding: 20px;
+  padding: 20px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.logoSection::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 18px;
+  right: 18px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
 }
 
 .logo {
@@ -34,116 +56,336 @@
 }
 
 .logoIcon {
-  font-size: 28px;
+  width: 36px;
+  height: 36px;
+  background: #f97316;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: -1px;
 }
 
 .logoText h1 {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 800;
   margin: 0;
-  color: #00d4ff;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
 }
 
 .logoText span {
-  font-size: 12px;
-  color: #888;
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  font-weight: 500;
+}
+
+/* ── Collapse Button ── */
+.collapseBtn {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  color: #94a3b8;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.collapseBtn:hover {
+  background: #fff4ed;
+  border-color: #fed7aa;
+  color: #f97316;
+  transform: scale(1.05);
+}
+
+.collapseBtn:active { transform: scale(0.98); }
+
+/* ── Nav Menu ── */
+.navMenu {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.navMenu::-webkit-scrollbar { width: 5px; }
+.navMenu::-webkit-scrollbar-track { background: transparent; margin: 5px 0; }
+.navMenu::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.navMenu::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+
+/* ── Section Label ── */
+.navSection {
+  padding: 10px 10px 5px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 2px;
 }
 
-.collapseBtn {
-  background: rgba(255,255,255,0.1);
-  border: none;
-  color: white;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.collapseBtn:hover {
-  background: rgba(255,255,255,0.2);
-}
-
-.navMenu {
-  flex: 1;
-  padding: 20px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
+/* ── Nav Item ── */
 .navItem {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 15px 20px;
-  color: #b8b8b8;
+  gap: 12px;
+  padding: 11px 14px;
+  color: #64748b;
   text-decoration: none;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  border-radius: 10px;
+  margin: 0 2px;
+  font-size: 13.5px;
+  font-weight: 400;
+  position: relative;
+}
+
+.navItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  background: #f97316;
+  border-radius: 0 3px 3px 0;
+  transition: height 0.2s ease;
 }
 
 .navItem:hover {
-  background: rgba(255,255,255,0.05);
-  color: white;
+  background: #f8fafc;
+  color: #475569;
 }
 
+.navItem:hover::before { height: 18px; }
+
+/* Active State - Orange */
 .navItem.active {
-  background: rgba(0,212,255,0.1);
-  color: #00d4ff;
-  border-left-color: #00d4ff;
+  background: #fff4ed;
+  color: #f97316;
+  font-weight: 400;
 }
 
-.panelFooter {
-  padding: 20px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+.navItem.active::before { height: 22px; }
+
+.navItem.active svg { color: #f97316; }
+
+.navItem svg {
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: all 0.2s;
+  stroke-width: 2;
+  width: 18px;
+  height: 18px;
+}
+
+.navItem:hover svg { color: #64748b; }
+
+.navItem span {
+  white-space: nowrap;
+  transition: opacity 0.2s;
+}
+
+/* ── Badge ── */
+.navBadge {
+  margin-left: auto;
+  background: #fff4ed;
+  color: #f97316;
   font-size: 11px;
-  color: #666;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  min-width: 20px;
   text-align: center;
 }
 
-/* Add at the end of LeftPanel.module.css */
-
+/* ── User Section ── */
 .userSection {
-  padding: 20px;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  padding: 14px;
+  margin: 6px 8px 10px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.02);
+  transition: box-shadow 0.2s;
 }
+
+.userSection:hover { box-shadow: 0 4px 12px rgba(0,0,0,.05); }
 
 .userInfo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
+  min-width: 0;
 }
 
 .userInfo span {
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
+  color: #0f172a;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .userInfo small {
-  color: #00d4ff;
-  font-size: 11px;
+  color: #f97316;
+  font-size: 10.5px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
 }
 
+/* ── Logout Button ── */
 .logoutBtn {
-  width: 36px;
-  height: 36px;
-  background: rgba(255,255,255,0.1);
-  color: white;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  background: #ffffff;
+  color: #94a3b8;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  border: 1.5px solid #e2e8f0;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
 .logoutBtn:hover {
-  background: #ff6b6b;
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+/* ── Footer ── */
+.panelFooter {
+  padding: 6px;
+  text-align: center;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+  position: relative;
+}
+
+.panelFooter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 40px;
+  right: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
+}
+
+.panelFooter p {
+  margin: 2px 0;
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+}
+
+/* ── Divider ── */
+.navDivider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
+  margin: 4px 0;
+}
+
+/* ── Collapsed State ── */
+.leftPanel.collapsed .logoText,
+.leftPanel.collapsed .navItem span,
+.leftPanel.collapsed .navBadge,
+.leftPanel.collapsed .userInfo,
+.leftPanel.collapsed .panelFooter {
+  opacity: 0;
+  display: none;
+}
+
+.leftPanel.collapsed .logoSection {
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.leftPanel.collapsed .logo { gap: 0; }
+
+.leftPanel.collapsed .navItem {
+  justify-content: center;
+  padding: 13px;
+  margin: 0 6px;
+}
+
+.leftPanel.collapsed .userSection {
+  justify-content: center;
+  padding: 12px;
+  margin: 10px 8px;
+}
+
+/* ── Tooltip ── */
+.leftPanel.collapsed .navItem {
+  position: relative;
+}
+
+.leftPanel.collapsed .navItem:hover::after {
+  content: attr(data-title);
+  position: absolute;
+  left: 68px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 9px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15);
+  z-index: 1000;
+  animation: tooltipSlide 0.18s ease;
+}
+
+@keyframes tooltipSlide {
+  from { opacity: 0; transform: translateY(-50%) translateX(-8px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+/* ── Active Pulse - Orange ── */
+@keyframes activePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(249,115,22,0.15); }
+  70%  { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+  100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+}
+
+.navItem.active { animation: activePulse 2s infinite; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .leftPanel {
+    transform: translateX(-100%);
+    width: 265px !important;
+  }
+  .leftPanel.open { transform: translateX(0); }
 }

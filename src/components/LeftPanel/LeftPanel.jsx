@@ -1,38 +1,40 @@
 import { NavLink } from 'react-router-dom'
 import { 
-  LayoutDashboard, 
-  Database, 
-  ClipboardList, 
-  Settings, 
-  Users,
-  ChevronLeft, 
-  ChevronRight, 
-  LogOut, 
-  Building2,
-  Truck,
-  
+  LayoutDashboard, Database, ClipboardList,
+  Settings, Users, ChevronLeft, ChevronRight,
+  LogOut, Building2, Truck
 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import styles from './LeftPanel.module.css'
 
 const menuItems = [
-  { name: 'Dashboard',        path: '/',           icon: LayoutDashboard },
-  { name: 'Buscaro Ops Data', path: '/ops-data',   icon: Database },
-  { name: 'Complaint Board',  path: '/complaints', icon: ClipboardList },
-  { name: 'User Management',  path: '/users',      icon: Users },
-  { name: 'Clients',          path: '/clients',    icon: Building2 },
-  { name: 'Vendors',          path: '/vendors',    icon: Truck },
-  { name: 'Backend Settings', path: '/backend',    icon: Settings },
+  { name: 'Dashboard',        path: '/',           icon: LayoutDashboard, section: 'Main' },
+  { name: 'Buscaro Ops Data', path: '/ops-data',   icon: Database,        section: 'Main' },
+  { name: 'Complaint Board',  path: '/complaints', icon: ClipboardList,   section: 'Main' },
+  { name: 'Clients',          path: '/clients',    icon: Building2,       section: 'Client' },
+  { name: 'Vendors',          path: '/vendors',    icon: Truck,           section: 'Vendor' },
+  { name: 'User Management',  path: '/users',      icon: Users,           section: 'System' },
+  { name: 'Backend Settings', path: '/backend',    icon: Settings,        section: 'System' },
 ]
 
 function LeftPanel({ collapsed, setCollapsed }) {
   const { currentUser, logout } = useAuth()
 
+  const groupedItems = menuItems.reduce((acc, item) => {
+    if (!acc[item.section]) acc[item.section] = []
+    acc[item.section].push(item)
+    return acc
+  }, {})
+
+  const sections = Object.keys(groupedItems)
+
   return (
     <aside className={`${styles.leftPanel} ${collapsed ? styles.collapsed : ''}`}>
+
+      {/* Logo */}
       <div className={styles.logoSection}>
         <div className={styles.logo}>
-          <span className={styles.logoIcon}>🚌</span>
+          <div className={styles.logoIcon}>B</div>
           {!collapsed && (
             <div className={styles.logoText}>
               <h1>BusCaro</h1>
@@ -40,33 +42,47 @@ function LeftPanel({ collapsed, setCollapsed }) {
             </div>
           )}
         </div>
-        <button 
-          className={styles.collapseBtn} 
+        <button
+          className={styles.collapseBtn}
           onClick={() => setCollapsed(!collapsed)}
+          title={collapsed ? 'Expand' : 'Collapse'}
         >
-          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
+      {/* Nav */}
       <nav className={styles.navMenu}>
-        {menuItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/'}
-              className={({ isActive }) => 
-                `${styles.navItem} ${isActive ? styles.active : ''}`
-              }
-            >
-              <Icon size={20} />
-              {!collapsed && <span>{item.name}</span>}
-            </NavLink>
-          )
-        })}
+        {sections.map((section, idx) => (
+          <div key={section}>
+            {!collapsed && (
+              <div className={styles.navSection}>{section}</div>
+            )}
+            {groupedItems[section].map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  end={item.path === '/'}
+                  data-title={item.name}
+                  className={({ isActive }) =>
+                    `${styles.navItem} ${isActive ? styles.active : ''}`
+                  }
+                >
+                  <Icon size={18} />
+                  {!collapsed && <span>{item.name}</span>}
+                </NavLink>
+              )
+            })}
+            {!collapsed && idx < sections.length - 1 && (
+              <div className={styles.navDivider} />
+            )}
+          </div>
+        ))}
       </nav>
 
+      {/* User Section */}
       <div className={styles.userSection}>
         {!collapsed && (
           <div className={styles.userInfo}>
@@ -75,10 +91,11 @@ function LeftPanel({ collapsed, setCollapsed }) {
           </div>
         )}
         <button onClick={logout} className={styles.logoutBtn} title="Logout">
-          <LogOut size={18} />
+          <LogOut size={16} />
         </button>
       </div>
 
+      {/* Footer */}
       {!collapsed && (
         <div className={styles.panelFooter}>
           <p>v1.0.0</p>
