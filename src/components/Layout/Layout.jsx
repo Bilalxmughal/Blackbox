@@ -12,15 +12,6 @@ function Layout() {
     <div className={`${styles.layout} ${collapsed ? styles.sidebarCollapsed : ''}`}>
       <LeftPanel collapsed={collapsed} setCollapsed={setCollapsed} />
       <div className={styles.mainContent}>
-        <header className={styles.topHeader}>
-          <h2>BusCaro - BlackBox CRM</h2>
-          <div className={styles.userInfo}>
-            <span>Welcome, {currentUser?.name || 'Admin'}</span>
-            <div className={styles.userAvatar}>
-              {(currentUser?.name || 'A')[0].toUpperCase()}
-            </div>
-          </div>
-        </header>
         <main className={styles.content}>
           <Outlet />
         </main>
