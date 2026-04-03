@@ -14,9 +14,9 @@ export const ROLES = {
     id: 'admin',
     name: 'Admin',
     permissions: [
-      'view_users', 
-      'add_user', 
-      'edit_user_basic', 
+      'view_users',
+      'add_user',
+      'edit_user_basic',
       'delete_user',
       'view_departments',
       'view_categories',
@@ -49,7 +49,10 @@ export const ROLES = {
 }
 
 // ==========================================
-// DEFAULT DATA
+// DEFAULT USERS
+// Passwords only exist here for seeding Firebase on first run
+// and for offline fallback login only.
+// They are NEVER logged, NEVER sent to Firestore.
 // ==========================================
 
 export const defaultUsers = [
@@ -65,7 +68,6 @@ export const defaultUsers = [
     createdAt: new Date().toISOString(),
     lastLogin: new Date().toISOString()
   },
-
   {
     id: 'user-2',
     name: 'Admin User',
@@ -77,8 +79,7 @@ export const defaultUsers = [
     status: 'active',
     createdAt: new Date().toISOString(),
     lastLogin: null
-  },
-
+  }
 ]
 
 export const defaultDepartments = [
@@ -111,7 +112,7 @@ export const savePendingRequest = (request) => {
   return newRequest
 }
 
-export const updateRequestStatus = (requestId, status) => {
+export const updateRequestStatus = (requestId) => {
   const requests = getPendingRequests()
   const updated = requests.filter(r => r.id !== requestId)
   localStorage.setItem('pendingRequests', JSON.stringify(updated))
@@ -131,22 +132,20 @@ export const hasPermission = (user, permission) => {
 
 export const canManageUser = (currentUser, targetUser) => {
   if (!currentUser || !targetUser) return false
-  
+
   const currentRole = ROLES[currentUser.role?.toUpperCase()]
   const targetRole = ROLES[targetUser.role?.toUpperCase()]
-  
+
   if (!currentRole || !targetRole) return false
-  
-  // Super Admin can manage everyone except themselves (for safety)
+
   if (currentUser.role === 'super_admin') {
     return currentUser.id !== targetUser.id
   }
-  
-  // Admin can manage Ops and User, but not Super Admin or other Admins
+
   if (currentUser.role === 'admin') {
     return targetRole.level < currentRole.level
   }
-  
+
   return false
 }
 
@@ -154,55 +153,12 @@ export const canChangeRole = (currentUser) => {
   return currentUser?.role === 'super_admin'
 }
 
-// ==========================================
-// FORCE RESET FUNCTION - Call this if login fails
-// ==========================================
-
-export const forceResetUsers = () => {
-  console.log('🔄 FORCING RESET TO DEFAULT USERS...')
-  localStorage.removeItem('users')
-  localStorage.setItem('users', JSON.stringify(defaultUsers))
-  console.log('✅ Reset complete. Default users restored.')
-  console.log('Users now:', defaultUsers.map(u => ({ email: u.email, password: u.password })))
-  return defaultUsers
+export const canEditClient = (currentUser) => {
+  if (!currentUser) return false
+  return ['super_admin', 'admin', 'ops'].includes(currentUser.role)
 }
 
-// Auto-check on load
-const checkAndFixUsers = () => {
-  try {
-    const saved = localStorage.getItem('users')
-    
-    // If no data or corrupted
-    if (!saved || saved === 'null' || saved === 'undefined' || saved === '[]') {
-      console.log('⚠️ No valid users found in localStorage')
-      forceResetUsers()
-      return
-    }
-    
-    const parsed = JSON.parse(saved)
-    
-    // If not array or empty
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      console.log('⚠️ Users data corrupted or empty')
-      forceResetUsers()
-      return
-    }
-    
-    // If Super Admin missing
-    const hasSuper = parsed.some(u => u.email === 'super@buscaro.com')
-    if (!hasSuper) {
-      console.log('⚠️ Super Admin not found in saved data')
-      forceResetUsers()
-      return
-    }
-    
-    console.log('✅ Users data valid. Count:', parsed.length)
-    
-  } catch (e) {
-    console.error('❌ Error checking users:', e)
-    forceResetUsers()
-  }
+export const canDeleteClient = (currentUser) => {
+  if (!currentUser) return false
+  return currentUser.role === 'super_admin'
 }
-
-// Run immediately when this file loads
-checkAndFixUsers()

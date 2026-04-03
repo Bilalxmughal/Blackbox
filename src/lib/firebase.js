@@ -1,4 +1,3 @@
-// firebase.js
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
@@ -32,19 +31,21 @@ export const db = getFirestore(app);
 // ===================== USERS =====================
 export const createUser = async (userData) => {
   try {
+    // NEVER store password in Firestore
+    const { password, ...safeData } = userData;
+
     const userWithDefaults = {
-      name: userData.name || userData.userName || "Unknown User",
-      email: userData.email || `user${Date.now()}@example.com`,
-      role: userData.role || "user",
-      department: userData.department || "N/A",
-      status: userData.status || "active",
+      name: safeData.name || safeData.userName || "Unknown User",
+      email: safeData.email || `user${Date.now()}@example.com`,
+      role: safeData.role || "user",
+      department: safeData.department || "N/A",
+      phone: safeData.phone || "",
+      status: safeData.status || "active",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      password: userData.password || "123456"
     };
 
     const docRef = await addDoc(collection(db, "users"), userWithDefaults);
-    console.log("User created with Firebase ID:", docRef.id);
     return { success: true, id: docRef.id, data: userWithDefaults };
   } catch (error) {
     console.error("Error creating user:", error);
@@ -83,8 +84,11 @@ export const getUserByEmail = async (email) => {
 
 export const updateUser = async (userId, updates) => {
   try {
+    // NEVER allow password to reach Firestore
+    const { password, ...safeUpdates } = updates;
+
     const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, { ...updates, updatedAt: serverTimestamp() });
+    await updateDoc(userRef, { ...safeUpdates, updatedAt: serverTimestamp() });
     return { success: true };
   } catch (error) {
     console.error("Error updating user:", error);
@@ -95,7 +99,6 @@ export const updateUser = async (userId, updates) => {
 export const deleteUser = async (userId) => {
   try {
     await deleteDoc(doc(db, "users", userId));
-    console.log("User deleted:", userId);
     return { success: true };
   } catch (error) {
     console.error("Error deleting user:", error);
@@ -106,6 +109,7 @@ export const deleteUser = async (userId) => {
 // ===================== LOGIN SESSIONS =====================
 export const saveLoginSession = async (userData) => {
   try {
+    // Only log safe fields — never password
     const sessionData = {
       userId: userData.id || userData.email || "unknown",
       userName: userData.name || userData.userName || "Unknown User",
@@ -113,12 +117,10 @@ export const saveLoginSession = async (userData) => {
       userRole: userData.role || "user",
       department: userData.department || "N/A",
       loginTime: serverTimestamp(),
-      ipAddress: "",
       userAgent: typeof window !== 'undefined' ? navigator.userAgent : ""
     };
 
     const docRef = await addDoc(collection(db, "loginSessions"), sessionData);
-    console.log("Login session saved:", docRef.id);
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error("Error saving login session:", error);

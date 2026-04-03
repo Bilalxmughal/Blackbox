@@ -20,23 +20,14 @@ function Login() {
 
     try {
       const result = await login(email, password)
-      
+
       if (result.success) {
-        console.log('Login successful, navigating to dashboard...')
         navigate('/', { replace: true })
-        
-        setTimeout(() => {
-          if (window.location.pathname === '/login') {
-            console.log('Navigate failed, using window.location')
-            window.location.href = '/'
-          }
-        }, 500)
       } else {
         setError(result.error)
       }
-    } catch (err) {
+    } catch {
       setError('Login failed. Please try again.')
-      console.error('Login error:', err)
     } finally {
       setIsLoading(false)
     }
@@ -44,9 +35,8 @@ function Login() {
 
   return (
     <div className={styles.loginContainer}>
-      {/* Background Pattern */}
       <div className={styles.bgPattern}></div>
-      
+
       {/* Left Side - Branding */}
       <div className={styles.brandSection}>
         <div className={styles.brandContent}>
@@ -106,6 +96,7 @@ function Login() {
                   placeholder="admin@buscaro.com"
                   required
                   disabled={isLoading}
+                  autoComplete="email"
                 />
               </div>
             </div>
@@ -121,6 +112,7 @@ function Login() {
                   placeholder="Enter your password"
                   required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
                 <button
                   type="button"
@@ -141,9 +133,9 @@ function Login() {
               <a href="#" className={styles.forgotPassword}>Forgot password?</a>
             </div>
 
-            <button 
-              type="submit" 
-              className={styles.loginBtn} 
+            <button
+              type="submit"
+              className={styles.loginBtn}
               disabled={isLoading}
             >
               {isLoading ? (
@@ -156,8 +148,6 @@ function Login() {
               )}
             </button>
           </form>
-
- 
         </div>
 
         <p className={styles.copyright}>

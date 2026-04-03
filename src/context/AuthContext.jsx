@@ -1,128 +1,133 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { getAllUsers, saveLoginSession, createUser } from '../lib/firebase';
+import { getAllUsers, saveLoginSession, createUser, updateUser } from '../lib/firebase';
 import { defaultUsers, ROLES } from '../data/users';
 
 const AuthContext = createContext(null);
+
+// Safe user object — password never included
+const sanitizeUser = (user) => {
+  const { password, ...safe } = user;
+  return safe;
+};
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state
   useEffect(() => {
-    try {
-      let localUsers = [];
-      const savedUsers = localStorage.getItem('users');
-
-      if (savedUsers) {
-        try {
-          const parsed = JSON.parse(savedUsers);
-          if (Array.isArray(parsed) && parsed.length > 0) localUsers = parsed;
-        } catch (e) {
-          console.error('Error parsing users:', e);
-        }
-      }
-
-      // Ensure default users exist
-      const existingEmails = new Set(localUsers.map(u => u.email.toLowerCase()));
-      const usersToAdd = defaultUsers.filter(u => !existingEmails.has(u.email.toLowerCase()));
-      if (usersToAdd.length > 0) {
-        localUsers = [...localUsers, ...usersToAdd];
-        localStorage.setItem('users', JSON.stringify(localUsers));
-      }
-
-      // Restore session safely
-      const savedCurrentUser = localStorage.getItem('currentUser');
-      if (savedCurrentUser) {
-        try {
-          const user = JSON.parse(savedCurrentUser);
-          const userExists = localUsers.some(u => u.email === user.email);
-          if (userExists) {
-            setCurrentUser(user);
+    const init = async () => {
+      try {
+        // Restore session immediately (no network needed)
+        const savedSession = localStorage.getItem('currentUser');
+        if (savedSession) {
+          try {
+            const sessionUser = JSON.parse(savedSession);
+            setCurrentUser(sessionUser);
             setIsAuthenticated(true);
-          } else {
+          } catch {
             localStorage.removeItem('currentUser');
           }
-        } catch {
-          localStorage.removeItem('currentUser');
         }
+
+        // Load users from Firebase (source of truth)
+        const result = await getAllUsers();
+
+        if (result.success && result.data.length > 0) {
+          // Firebase has users — cache safe fields only (no passwords)
+          const safeUsers = result.data.map(sanitizeUser);
+          localStorage.setItem('users', JSON.stringify(safeUsers));
+        } else {
+          // Firebase empty on first run — seed default users
+          await seedDefaultUsers();
+        }
+      } catch {
+        // Firebase unreachable — ensure local fallback exists
+        ensureLocalFallback();
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      setIsLoading(false);
-
-      // Background Firebase sync
-      setTimeout(() => syncWithFirebase(localUsers), 100);
-    } catch (e) {
-      console.error('Initialization error:', e);
-      setIsLoading(false);
-    }
+    init();
   }, []);
 
-  // Background Firebase sync
-  const syncWithFirebase = async (localUsers) => {
+  // Seed default users into Firebase (first run only)
+  const seedDefaultUsers = async () => {
     try {
-      const firebaseResult = await getAllUsers();
-      if (!firebaseResult.success) return;
-
-      const firebaseUsers = firebaseResult.data;
-      let updated = [...localUsers];
-      let changed = false;
-
-      firebaseUsers.forEach(fbUser => {
-        const idx = updated.findIndex(u => u.email?.toLowerCase() === fbUser.email?.toLowerCase());
-        if (idx !== -1) {
-          if (!updated[idx].firebaseId) {
-            updated[idx] = { ...updated[idx], firebaseId: fbUser.id };
-            changed = true;
-          }
-        } else {
-          updated.push({ ...fbUser, firebaseId: fbUser.id });
-          changed = true;
-        }
-      });
-
-      if (changed) localStorage.setItem('users', JSON.stringify(updated));
+      for (const user of defaultUsers) {
+        await createUser(user); // firebase.js strips password before Firestore write
+      }
+      // Cache safe versions locally
+      localStorage.setItem('users', JSON.stringify(defaultUsers.map(sanitizeUser)));
     } catch {
-      console.log('Firebase offline, using local data');
+      ensureLocalFallback();
     }
   };
 
-  // Login
+  // Last resort fallback — no passwords stored
+  const ensureLocalFallback = () => {
+    const saved = localStorage.getItem('users');
+    if (!saved || saved === '[]') {
+      localStorage.setItem('users', JSON.stringify(defaultUsers.map(sanitizeUser)));
+    }
+  };
+
+  // Login — always checks Firebase first, falls back to defaultUsers if offline
   const login = async (email, password) => {
     const cleanEmail = email.toLowerCase().trim();
     const cleanPassword = password.trim();
 
     try {
-      let users = [];
-      const savedUsers = localStorage.getItem('users');
-      if (savedUsers) {
-        try { users = JSON.parse(savedUsers); }
-        catch { users = defaultUsers; }
+      // Firebase is source of truth for auth
+      // NOTE: Firestore users don't have passwords (by design) —
+      // so we match email from Firebase, then verify password from defaultUsers
+      // This works until you implement Firebase Auth properly.
+      const result = await getAllUsers();
+
+      let usersWithPasswords = [...defaultUsers];
+
+      if (result.success && result.data.length > 0) {
+        // Merge Firebase user data with defaultUsers passwords for verification
+        usersWithPasswords = result.data.map(fbUser => {
+          const localDefault = defaultUsers.find(
+            d => d.email.toLowerCase() === fbUser.email?.toLowerCase()
+          );
+          return { ...fbUser, firebaseId: fbUser.id, password: localDefault?.password || fbUser.password };
+        });
       }
 
-      if (!Array.isArray(users) || users.length === 0) {
-        users = defaultUsers;
-        localStorage.setItem('users', JSON.stringify(defaultUsers));
-      }
-
-      const user = users.find(u =>
+      const user = usersWithPasswords.find(u =>
         u.email?.toLowerCase().trim() === cleanEmail &&
         u.password?.trim() === cleanPassword
       );
 
       if (!user) {
-        const emailExists = users.some(u => u.email?.toLowerCase().trim() === cleanEmail);
-        return { success: false, error: emailExists ? 'Incorrect password' : 'Email not registered' };
+        const emailExists = usersWithPasswords.some(
+          u => u.email?.toLowerCase().trim() === cleanEmail
+        );
+        return {
+          success: false,
+          error: emailExists ? 'Incorrect password' : 'Email not registered'
+        };
       }
 
-      if (user.status === 'inactive') return { success: false, error: 'Account inactive' };
+      if (user.status === 'inactive') {
+        return { success: false, error: 'Account inactive. Contact your administrator.' };
+      }
 
-      // Safe user info
+      // firebaseId = actual Firestore document ID (from getAllUsers result)
+      // id = local fallback ID (user-1, user-2 etc) — never use for Firestore writes
+      const firestoreDocId = user.firebaseId || null;
+
+      // Session — password never included
       const safeUser = {
         id: user.id,
+        firebaseId: firestoreDocId,
+        name: user.name,
         email: user.email,
         role: user.role,
+        department: user.department,
         lastLogin: new Date().toISOString()
       };
 
@@ -130,43 +135,66 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true);
       localStorage.setItem('currentUser', JSON.stringify(safeUser));
 
-      // Background: save login session (without password)
-      setTimeout(() => saveLoginSession(safeUser).catch(() => {}), 0);
+      // Background updates — only if we have a real Firestore doc ID
+      setTimeout(() => {
+        if (firestoreDocId) {
+          updateUser(firestoreDocId, { lastLogin: new Date().toISOString() }).catch(() => {});
+        }
+        saveLoginSession(safeUser).catch(() => {});
+      }, 0);
 
       return { success: true, user: safeUser };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Login failed' };
+
+    } catch {
+      // Firebase offline — fallback to defaultUsers
+      return loginOffline(cleanEmail, cleanPassword);
     }
   };
 
-  // Create user locally and sync to Firebase
+  // Offline login — only works for defaultUsers (passwords available in memory)
+  const loginOffline = (email, password) => {
+    const user = defaultUsers.find(u =>
+      u.email?.toLowerCase().trim() === email &&
+      u.password?.trim() === password
+    );
+
+    if (!user) return { success: false, error: 'Login failed. Check your connection.' };
+    if (user.status === 'inactive') return { success: false, error: 'Account inactive.' };
+
+    const safeUser = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      department: user.department,
+      lastLogin: new Date().toISOString()
+    };
+
+    setCurrentUser(safeUser);
+    setIsAuthenticated(true);
+    localStorage.setItem('currentUser', JSON.stringify(safeUser));
+
+    return { success: true, user: safeUser };
+  };
+
   const createUserInstant = async (userData) => {
-    const newUser = {
-      id: `user-${Date.now()}`,
-      ...userData,
+    // firebase.js strips password before Firestore write
+    const result = await createUser(userData);
+    if (!result.success) return { success: false, error: result.error };
+
+    const safeUser = {
+      ...sanitizeUser(userData),
+      firebaseId: result.id,
       createdAt: new Date().toISOString(),
       status: 'active'
     };
 
-    const savedUsers = localStorage.getItem('users');
-    const users = savedUsers ? JSON.parse(savedUsers) : [];
-    const updated = [...users, newUser];
-    localStorage.setItem('users', JSON.stringify(updated));
+    // Update local cache (password-free)
+    const saved = localStorage.getItem('users');
+    const users = saved ? JSON.parse(saved) : [];
+    localStorage.setItem('users', JSON.stringify([...users, safeUser]));
 
-    // Firebase sync (without password)
-    setTimeout(async () => {
-      try {
-        const { password, ...userWithoutPassword } = newUser;
-        const result = await createUser({ ...userWithoutPassword, password: '123456' });
-        if (result.success) {
-          const finalUsers = updated.map(u => u.id === newUser.id ? { ...u, firebaseId: result.id } : u);
-          localStorage.setItem('users', JSON.stringify(finalUsers));
-        }
-      } catch { console.log('Firebase sync pending for:', newUser.email); }
-    }, 0);
-
-    return { success: true, user: newUser };
+    return { success: true, user: safeUser };
   };
 
   const logout = () => {
@@ -177,16 +205,21 @@ export function AuthProvider({ children }) {
 
   const resetAllData = () => {
     localStorage.clear();
-    localStorage.setItem('users', JSON.stringify(defaultUsers));
     window.location.reload();
   };
 
   const forceLogin = (email) => {
-    const savedUsers = localStorage.getItem('users');
-    const users = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
-    const user = users.find(u => u.email?.toLowerCase().trim() === email.toLowerCase().trim());
+    const user = defaultUsers.find(u =>
+      u.email?.toLowerCase() === email.toLowerCase().trim()
+    );
     if (user) {
-      const safeUser = { id: user.id, email: user.email, role: user.role };
+      const safeUser = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department
+      };
       setCurrentUser(safeUser);
       setIsAuthenticated(true);
       localStorage.setItem('currentUser', JSON.stringify(safeUser));
@@ -195,7 +228,6 @@ export function AuthProvider({ children }) {
     return false;
   };
 
-  if (isLoading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>Loading...</div>;
 
   return (
     <AuthContext.Provider value={{
