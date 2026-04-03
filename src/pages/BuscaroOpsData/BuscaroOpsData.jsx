@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'  // ← Fragment import kiya
 import Papa from 'papaparse'
 import { 
   RefreshCw, ChevronDown, ChevronUp, Search, Download, 
@@ -321,10 +321,11 @@ function Buscaro({ isAdmin }) {
                 ))}
               </tr>
             </thead>
+            
             <tbody>
               {filteredData.map((row, index) => (
-                <>
-                  <tr key={index} className={styles.mainRow}>
+                <Fragment key={index}>  {/* ← ✅ Fragment with KEY added */}
+                  <tr className={styles.mainRow}>
                     <td>
                       <button 
                         className={`${styles.expandBtn} ${expandedRows[index] ? styles.expandBtnActive : ''}`} 
@@ -354,7 +355,7 @@ function Buscaro({ isAdmin }) {
                     ))}
                   </tr>
                   {expandedRows[index] && (
-                    <tr className={styles.expandedRow}>
+                    <tr key={`expanded-${index}`} className={styles.expandedRow}>  {/* ← ✅ KEY added here */}
                       <td colSpan={mainColumns.length + 1}>
                         <div className={styles.expandedContent}>
                           <div className={styles.detailsGrid}>
@@ -369,7 +370,7 @@ function Buscaro({ isAdmin }) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment> 
               ))}
             </tbody>
           </table>

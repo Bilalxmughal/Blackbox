@@ -10,9 +10,9 @@ import {
   query,
   where,
   orderBy,
-  serverTimestamp 
+  serverTimestamp,
+  getDoc  // ✅ Added missing import
 } from "firebase/firestore";
-import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB5rNil6KZW2kaye5-bRoVhKM3z5UCOVTg",
@@ -26,13 +26,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 // ==========================================
 // USERS
 // ==========================================
 
-// Create a new user document in Firebase
 export const createUser = async (userData) => {
   try {
     const userWithTimestamp = {
@@ -49,7 +47,6 @@ export const createUser = async (userData) => {
   }
 };
 
-// Get all users from Firebase
 export const getAllUsers = async () => {
   try {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
@@ -69,8 +66,6 @@ export const getAllUsers = async () => {
   }
 };
 
-// ✅ NEW: Find a user's Firebase document ID by their email address
-// Used as fallback when firebaseId is not stored locally
 export const getUserByEmail = async (email) => {
   try {
     const q = query(
@@ -90,7 +85,6 @@ export const getUserByEmail = async (email) => {
   }
 };
 
-// Update an existing user document in Firebase
 export const updateUser = async (userId, updates) => {
   try {
     const userRef = doc(db, "users", userId);
@@ -105,7 +99,6 @@ export const updateUser = async (userId, updates) => {
   }
 };
 
-// Delete a user document from Firebase
 export const deleteUser = async (userId) => {
   try {
     await deleteDoc(doc(db, "users", userId));
@@ -121,7 +114,6 @@ export const deleteUser = async (userId) => {
 // LOGIN SESSIONS
 // ==========================================
 
-// Save a login session record
 export const saveLoginSession = async (userData) => {
   try {
     const sessionData = {
@@ -142,7 +134,6 @@ export const saveLoginSession = async (userData) => {
   }
 };
 
-// Get login history — all users or filtered by userId
 export const getLoginHistory = async (userId = null) => {
   try {
     let q;
@@ -171,7 +162,6 @@ export const getLoginHistory = async (userId = null) => {
 // COMPLAINTS
 // ==========================================
 
-// Create a new complaint document
 export const createComplaint = async (complaintData) => {
   try {
     const complaintWithMeta = {
@@ -189,7 +179,6 @@ export const createComplaint = async (complaintData) => {
   }
 };
 
-// Get all complaints
 export const getAllComplaints = async () => {
   try {
     const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
@@ -205,7 +194,6 @@ export const getAllComplaints = async () => {
   }
 };
 
-// Get complaints submitted by a specific user
 export const getUserComplaints = async (userId) => {
   try {
     const q = query(
@@ -225,7 +213,6 @@ export const getUserComplaints = async (userId) => {
   }
 };
 
-// Update a complaint document
 export const updateComplaint = async (complaintId, updates) => {
   try {
     const complaintRef = doc(db, "complaints", complaintId);
@@ -237,7 +224,6 @@ export const updateComplaint = async (complaintId, updates) => {
   }
 };
 
-// Add a comment to a complaint's subcollection
 export const addCommentToComplaint = async (complaintId, commentData) => {
   try {
     const commentWithMeta = { ...commentData, createdAt: serverTimestamp() };
@@ -254,7 +240,6 @@ export const addCommentToComplaint = async (complaintId, commentData) => {
   }
 };
 
-// Get all comments for a complaint
 export const getComplaintComments = async (complaintId) => {
   try {
     const q = query(
@@ -277,7 +262,6 @@ export const getComplaintComments = async (complaintId) => {
 // CLIENTS
 // ==========================================
 
-// Create a new client document
 export const createClient = async (clientData) => {
   try {
     const clientWithTimestamp = {
@@ -294,7 +278,6 @@ export const createClient = async (clientData) => {
   }
 };
 
-// Get all clients
 export const getAllClients = async () => {
   try {
     const q = query(collection(db, "clients"), orderBy("createdAt", "desc"));
@@ -314,7 +297,6 @@ export const getAllClients = async () => {
   }
 };
 
-// Update a client document
 export const updateClient = async (clientId, updates) => {
   try {
     const clientRef = doc(db, "clients", clientId);
@@ -329,7 +311,6 @@ export const updateClient = async (clientId, updates) => {
   }
 };
 
-// Delete a client document
 export const deleteClient = async (clientId) => {
   try {
     await deleteDoc(doc(db, "clients", clientId));
@@ -341,11 +322,10 @@ export const deleteClient = async (clientId) => {
   }
 };
 
-// Get client by ID
 export const getClientById = async (clientId) => {
   try {
     const clientRef = doc(db, "clients", clientId);
-    const docSnap = await getDoc(clientRef);
+    const docSnap = await getDoc(clientRef);  // ✅ Now works!
     if (docSnap.exists()) {
       return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
     }
