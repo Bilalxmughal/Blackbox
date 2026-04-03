@@ -378,12 +378,14 @@
   background: #fff;
   border-radius: 16px;
   border: 1px solid #ebebeb;
-  overflow: hidden;
+  overflow-x: auto;   /* <-- add this */
+  overflow-y: hidden; /* optional: vertical scroll nahi chahiye */
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .clientsTable {
   width: 100%;
+  min-width: 900px; /* ya jitna columns require karte hain */
   border-collapse: collapse;
   font-size: 13px;
 }

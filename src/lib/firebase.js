@@ -1,3 +1,4 @@
+// firebase.js
 import { initializeApp } from "firebase/app";
 import { 
   getFirestore, 
@@ -11,9 +12,10 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  getDoc  // ✅ Added missing import
+  getDoc
 } from "firebase/firestore";
 
+// ===================== CONFIG =====================
 const firebaseConfig = {
   apiKey: "AIzaSyB5rNil6KZW2kaye5-bRoVhKM3z5UCOVTg",
   authDomain: "buscaro-crm.firebaseapp.com",
@@ -27,20 +29,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-// ==========================================
-// USERS
-// ==========================================
-
+// ===================== USERS =====================
 export const createUser = async (userData) => {
   try {
-    const userWithTimestamp = {
-      ...userData,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+    const userWithDefaults = {
+      name: userData.name || userData.userName || "Unknown User",
+      email: userData.email || `user${Date.now()}@example.com`,
+      role: userData.role || "user",
+      department: userData.department || "N/A",
+      status: userData.status || "active",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      password: userData.password || "123456"
     };
-    const docRef = await addDoc(collection(db, "users"), userWithTimestamp);
+
+    const docRef = await addDoc(collection(db, "users"), userWithDefaults);
     console.log("User created with Firebase ID:", docRef.id);
-    return { success: true, id: docRef.id, data: userWithTimestamp };
+    return { success: true, id: docRef.id, data: userWithDefaults };
   } catch (error) {
     console.error("Error creating user:", error);
     return { success: false, error: error.message };
@@ -50,15 +55,12 @@ export const createUser = async (userData) => {
 export const getAllUsers = async () => {
   try {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const users = [];
-    querySnapshot.forEach((doc) => {
-      users.push({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt || new Date().toISOString()
-      });
-    });
+    const snapshot = await getDocs(q);
+    const users = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || new Date().toISOString()
+    }));
     return { success: true, data: users };
   } catch (error) {
     console.error("Error getting users:", error);
@@ -68,15 +70,9 @@ export const getAllUsers = async () => {
 
 export const getUserByEmail = async (email) => {
   try {
-    const q = query(
-      collection(db, "users"),
-      where("email", "==", email.toLowerCase().trim())
-    );
+    const q = query(collection(db, "users"), where("email", "==", email.toLowerCase().trim()));
     const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-      console.warn("No Firebase document found for email:", email);
-      return { success: false, error: "User not found" };
-    }
+    if (snapshot.empty) return { success: false, error: "User not found" };
     const docSnap = snapshot.docs[0];
     return { success: true, id: docSnap.id, data: docSnap.data() };
   } catch (error) {
@@ -88,10 +84,7 @@ export const getUserByEmail = async (email) => {
 export const updateUser = async (userId, updates) => {
   try {
     const userRef = doc(db, "users", userId);
-    await updateDoc(userRef, {
-      ...updates,
-      updatedAt: new Date().toISOString()
-    });
+    await updateDoc(userRef, { ...updates, updatedAt: serverTimestamp() });
     return { success: true };
   } catch (error) {
     console.error("Error updating user:", error);
@@ -110,23 +103,22 @@ export const deleteUser = async (userId) => {
   }
 };
 
-// ==========================================
-// LOGIN SESSIONS
-// ==========================================
-
+// ===================== LOGIN SESSIONS =====================
 export const saveLoginSession = async (userData) => {
   try {
     const sessionData = {
-      userId: userData.id || userData.email,
-      userName: userData.name,
-      userEmail: userData.email,
-      userRole: userData.role,
-      department: userData.department,
+      userId: userData.id || userData.email || "unknown",
+      userName: userData.name || userData.userName || "Unknown User",
+      userEmail: userData.email || "unknown@example.com",
+      userRole: userData.role || "user",
+      department: userData.department || "N/A",
       loginTime: serverTimestamp(),
       ipAddress: "",
-      userAgent: typeof window !== 'undefined' ? navigator.userAgent : ''
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : ""
     };
+
     const docRef = await addDoc(collection(db, "loginSessions"), sessionData);
+    console.log("Login session saved:", docRef.id);
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error("Error saving login session:", error);
@@ -136,21 +128,12 @@ export const saveLoginSession = async (userData) => {
 
 export const getLoginHistory = async (userId = null) => {
   try {
-    let q;
-    if (userId) {
-      q = query(
-        collection(db, "loginSessions"),
-        where("userId", "==", userId),
-        orderBy("loginTime", "desc")
-      );
-    } else {
-      q = query(collection(db, "loginSessions"), orderBy("loginTime", "desc"));
-    }
-    const querySnapshot = await getDocs(q);
-    const sessions = [];
-    querySnapshot.forEach((doc) => {
-      sessions.push({ id: doc.id, ...doc.data() });
-    });
+    const q = userId 
+      ? query(collection(db, "loginSessions"), where("userId", "==", userId), orderBy("loginTime", "desc"))
+      : query(collection(db, "loginSessions"), orderBy("loginTime", "desc"));
+
+    const snapshot = await getDocs(q);
+    const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     return { success: true, data: sessions };
   } catch (error) {
     console.error("Error getting login history:", error);
@@ -158,20 +141,17 @@ export const getLoginHistory = async (userId = null) => {
   }
 };
 
-// ==========================================
-// COMPLAINTS
-// ==========================================
-
-export const createComplaint = async (complaintData) => {
+// ===================== COMPLAINTS =====================
+export const createComplaint = async (data) => {
   try {
-    const complaintWithMeta = {
-      ...complaintData,
-      createdAt: serverTimestamp(),
+    const complaint = { 
+      ...data, 
+      createdAt: serverTimestamp(), 
       updatedAt: serverTimestamp(),
-      status: complaintData.status || 'Open',
-      resolvedPercent: 0
+      status: data.status || "Open",
+      resolvedPercent: 0 
     };
-    const docRef = await addDoc(collection(db, "complaints"), complaintWithMeta);
+    const docRef = await addDoc(collection(db, "complaints"), complaint);
     return { success: true, id: docRef.id };
   } catch (error) {
     console.error("Error creating complaint:", error);
@@ -182,11 +162,8 @@ export const createComplaint = async (complaintData) => {
 export const getAllComplaints = async () => {
   try {
     const q = query(collection(db, "complaints"), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const complaints = [];
-    querySnapshot.forEach((doc) => {
-      complaints.push({ id: doc.id, ...doc.data() });
-    });
+    const snapshot = await getDocs(q);
+    const complaints = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     return { success: true, data: complaints };
   } catch (error) {
     console.error("Error getting complaints:", error);
@@ -194,29 +171,10 @@ export const getAllComplaints = async () => {
   }
 };
 
-export const getUserComplaints = async (userId) => {
-  try {
-    const q = query(
-      collection(db, "complaints"),
-      where("submittedById", "==", userId),
-      orderBy("createdAt", "desc")
-    );
-    const querySnapshot = await getDocs(q);
-    const complaints = [];
-    querySnapshot.forEach((doc) => {
-      complaints.push({ id: doc.id, ...doc.data() });
-    });
-    return { success: true, data: complaints };
-  } catch (error) {
-    console.error("Error getting user complaints:", error);
-    return { success: false, error: error.message };
-  }
-};
-
 export const updateComplaint = async (complaintId, updates) => {
   try {
-    const complaintRef = doc(db, "complaints", complaintId);
-    await updateDoc(complaintRef, { ...updates, updatedAt: serverTimestamp() });
+    const ref = doc(db, "complaints", complaintId);
+    await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
     return { success: true };
   } catch (error) {
     console.error("Error updating complaint:", error);
@@ -226,9 +184,9 @@ export const updateComplaint = async (complaintId, updates) => {
 
 export const addCommentToComplaint = async (complaintId, commentData) => {
   try {
-    const commentWithMeta = { ...commentData, createdAt: serverTimestamp() };
+    const comment = { ...commentData, createdAt: serverTimestamp() };
     const commentsRef = collection(db, "complaints", complaintId, "comments");
-    const docRef = await addDoc(commentsRef, commentWithMeta);
+    const docRef = await addDoc(commentsRef, comment);
     await updateDoc(doc(db, "complaints", complaintId), {
       updatedAt: serverTimestamp(),
       lastCommentAt: serverTimestamp()
@@ -240,38 +198,16 @@ export const addCommentToComplaint = async (complaintId, commentData) => {
   }
 };
 
-export const getComplaintComments = async (complaintId) => {
+// ===================== CLIENTS =====================
+export const createClient = async (data) => {
   try {
-    const q = query(
-      collection(db, "complaints", complaintId, "comments"),
-      orderBy("createdAt", "asc")
-    );
-    const querySnapshot = await getDocs(q);
-    const comments = [];
-    querySnapshot.forEach((doc) => {
-      comments.push({ id: doc.id, ...doc.data() });
-    });
-    return { success: true, data: comments };
-  } catch (error) {
-    console.error("Error getting comments:", error);
-    return { success: false, error: error.message };
-  }
-};
-
-// ==========================================
-// CLIENTS
-// ==========================================
-
-export const createClient = async (clientData) => {
-  try {
-    const clientWithTimestamp = {
-      ...clientData,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    const client = { 
+      ...data, 
+      createdAt: serverTimestamp(), 
+      updatedAt: serverTimestamp() 
     };
-    const docRef = await addDoc(collection(db, "clients"), clientWithTimestamp);
-    console.log("Client created with Firebase ID:", docRef.id);
-    return { success: true, id: docRef.id, data: clientWithTimestamp };
+    const docRef = await addDoc(collection(db, "clients"), client);
+    return { success: true, id: docRef.id, data: client };
   } catch (error) {
     console.error("Error creating client:", error);
     return { success: false, error: error.message };
@@ -281,15 +217,12 @@ export const createClient = async (clientData) => {
 export const getAllClients = async () => {
   try {
     const q = query(collection(db, "clients"), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    const clients = [];
-    querySnapshot.forEach((doc) => {
-      clients.push({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate?.() || new Date().toISOString()
-      });
-    });
+    const snapshot = await getDocs(q);
+    const clients = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || new Date().toISOString()
+    }));
     return { success: true, data: clients };
   } catch (error) {
     console.error("Error getting clients:", error);
@@ -299,11 +232,8 @@ export const getAllClients = async () => {
 
 export const updateClient = async (clientId, updates) => {
   try {
-    const clientRef = doc(db, "clients", clientId);
-    await updateDoc(clientRef, {
-      ...updates,
-      updatedAt: serverTimestamp()
-    });
+    const ref = doc(db, "clients", clientId);
+    await updateDoc(ref, { ...updates, updatedAt: serverTimestamp() });
     return { success: true };
   } catch (error) {
     console.error("Error updating client:", error);
@@ -314,7 +244,6 @@ export const updateClient = async (clientId, updates) => {
 export const deleteClient = async (clientId) => {
   try {
     await deleteDoc(doc(db, "clients", clientId));
-    console.log("Client deleted:", clientId);
     return { success: true };
   } catch (error) {
     console.error("Error deleting client:", error);
@@ -324,12 +253,10 @@ export const deleteClient = async (clientId) => {
 
 export const getClientById = async (clientId) => {
   try {
-    const clientRef = doc(db, "clients", clientId);
-    const docSnap = await getDoc(clientRef);  // ✅ Now works!
-    if (docSnap.exists()) {
-      return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
-    }
-    return { success: false, error: "Client not found" };
+    const ref = doc(db, "clients", clientId);
+    const docSnap = await getDoc(ref);
+    if (!docSnap.exists()) return { success: false, error: "Client not found" };
+    return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
   } catch (error) {
     console.error("Error getting client:", error);
     return { success: false, error: error.message };

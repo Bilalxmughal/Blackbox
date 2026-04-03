@@ -13,6 +13,7 @@
   margin: 0 auto;
   background: #f5f6fa;
   min-height: 100vh;
+  
 }
 
 /* Header */
@@ -312,6 +313,9 @@
   border: 1px solid #ebebeb;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  overflow-x: auto; /* enable horizontal scroll */
+  overflow-y: hidden; /* optional: hide vertical scroll if not needed */
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
 }
 
 .vendorsTable {
@@ -1059,6 +1063,7 @@
   background: #f5f6fa;
   min-height: 100vh;
   animation: fadeIn 0.25s ease;
+  
 }
 
 @keyframes fadeIn {

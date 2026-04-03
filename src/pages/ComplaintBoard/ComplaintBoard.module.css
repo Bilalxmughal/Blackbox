@@ -7,6 +7,7 @@
   padding: 24px 28px;
   background: #f5f6fa;
   min-height: 100vh;
+  
 }
 
 /* ── TOPBAR ── */
@@ -261,12 +262,18 @@
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.02);
   margin-top: 10px;
+  overflow-x: auto; /* enable horizontal scroll */
+  overflow-y: hidden; /* optional: hide vertical scroll if not needed */
+  -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
 }
+
+
 
 .complaintsTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 12.5px;
+  
 }
 
 .complaintsTable thead {

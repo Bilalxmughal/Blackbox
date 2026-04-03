@@ -8,7 +8,6 @@ import styles from './Clients.module.css'
 import ClientImporter from '../../components/ClientImporter/ClientImporter'
 
 
-
 function Clients() {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
@@ -379,6 +378,7 @@ function Clients() {
               <th>Actions</th>
             </tr>
           </thead>
+          
           <tbody>
             {filteredClients.map(client => (
               <tr key={client.id} className={client.status === 'inactive' ? styles.inactiveRow : ''}>
@@ -429,8 +429,7 @@ function Clients() {
                     <button 
                       className={styles.viewBtn} 
                       onClick={() => navigate(`/clients/${client.id}`)}
-                      title="View Details"
-                    >
+                      title="View Details">
                       <Eye size={16} />
                     </button>
                     
@@ -438,18 +437,16 @@ function Clients() {
                       <button 
                         className={styles.editBtn} 
                         onClick={() => handleEdit(client)}
-                        title="Edit Client"
-                      >
+                        title="Edit Client">
                         <Edit2 size={16} />
                       </button>
                     )}
-                    
+
                     {canDeleteClient(currentUser) && (
                       <button 
                         className={styles.deleteBtn} 
                         onClick={() => setShowDeleteConfirm(client)}
-                        title="Delete Client (Super Admin Only)"
-                      >
+                        title="Delete Client (Super Admin Only)">
                         <Trash2 size={16} />
                       </button>
                     )}

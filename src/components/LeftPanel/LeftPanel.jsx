@@ -17,7 +17,7 @@ const menuItems = [
   { name: 'Backend Settings', path: '/backend',    icon: Settings,        section: 'System' },
 ]
 
-function LeftPanel({ collapsed, setCollapsed }) {
+function LeftPanel({ collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const { currentUser, logout } = useAuth()
 
   const groupedItems = menuItems.reduce((acc, item) => {
@@ -29,8 +29,9 @@ function LeftPanel({ collapsed, setCollapsed }) {
   const sections = Object.keys(groupedItems)
 
   return (
-    <aside className={`${styles.leftPanel} ${collapsed ? styles.collapsed : ''}`}>
-
+    <aside 
+      className={`${styles.leftPanel} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''}`}
+    >
       {/* Logo */}
       <div className={styles.logoSection}>
         <div className={styles.logo}>
@@ -55,9 +56,7 @@ function LeftPanel({ collapsed, setCollapsed }) {
       <nav className={styles.navMenu}>
         {sections.map((section, idx) => (
           <div key={section}>
-            {!collapsed && (
-              <div className={styles.navSection}>{section}</div>
-            )}
+            {!collapsed && <div className={styles.navSection}>{section}</div>}
             {groupedItems[section].map((item) => {
               const Icon = item.icon
               return (
@@ -69,6 +68,7 @@ function LeftPanel({ collapsed, setCollapsed }) {
                   className={({ isActive }) =>
                     `${styles.navItem} ${isActive ? styles.active : ''}`
                   }
+                  onClick={() => mobileOpen && setMobileOpen(false)} // 👈 auto close mobile
                 >
                   <Icon size={18} />
                   {!collapsed && <span>{item.name}</span>}
