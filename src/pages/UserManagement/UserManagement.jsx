@@ -100,22 +100,18 @@ function UserManagement() {
     loadData()
   }, [])
 
-  // ✅ FIX 1: saveUsers was missing — used everywhere but never defined
   const saveUsers = (updated) => {
     setUsers(updated)
     localStorage.setItem('users', JSON.stringify(updated))
   }
 
-  // ✅ FIX 2: getFirebaseId was missing — used in toggleStatus and deleteUser
   const getFirebaseId = (user) => user.firebaseId || user.id
 
-  // Resolve Firebase doc ID — uses stored firebaseId OR queries Firebase by email as fallback
   const resolveFirebaseId = async (user) => {
     if (user.firebaseId) return user.firebaseId
 
     const res = await getUserByEmail(user.email)
     if (res.success) {
-      // Cache it locally so future calls don't need to query again
       const updatedUsers = JSON.parse(localStorage.getItem('users') || '[]')
       const idx = updatedUsers.findIndex(u => u.email?.toLowerCase() === user.email?.toLowerCase())
       if (idx !== -1) {
@@ -129,7 +125,6 @@ function UserManagement() {
     return null
   }
 
-  // Refresh currentUser session if editing the logged-in user — prevents auto-logout
   const syncCurrentUserSession = (updatedUser) => {
     const session = localStorage.getItem('currentUser')
     if (!session) return
@@ -141,7 +136,6 @@ function UserManagement() {
     } catch (e) {}
   }
 
-  // Permission checks
   const canAddUser = hasPermission(currentUser, 'add_user') || currentUser?.role === 'ops'
   const canEditUser = (targetUser) => canManageUser(currentUser, targetUser)
   const canDeleteUser = (targetUser) => {
@@ -150,7 +144,6 @@ function UserManagement() {
   }
   const canChangeRole = currentUser?.role === 'super_admin'
 
-  // Filter users by search and dropdowns
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
       const matchesSearch = 
@@ -164,7 +157,6 @@ function UserManagement() {
     })
   }, [users, searchTerm, filterRole, filterStatus, filterDept])
 
-  // Stats for header cards
   const stats = useMemo(() => ({
     total: users.length,
     active: users.filter(u => u.status === 'active').length,
@@ -212,7 +204,6 @@ function UserManagement() {
     setSelectedUser(null)
   }
 
-  // Handle Add and Edit form submissions
   const handleSubmit = () => {
     if (!formData.name || !formData.email || !formData.phone) {
       alert('Please fill all required fields')
@@ -235,7 +226,6 @@ function UserManagement() {
         return
       }
 
-      // Save locally first for instant UI response
       const newUser = {
         id: `user-${Date.now()}`,
         name: formData.name,
@@ -252,7 +242,6 @@ function UserManagement() {
       const updatedUsers = [...users, newUser]
       saveUsers(updatedUsers)
 
-      // Sync to Firebase in background — store returned doc ID as firebaseId
       setTimeout(() => {
         createUserInFirebase(newUser).then(result => {
           if (result.success) {
@@ -298,7 +287,6 @@ function UserManagement() {
       saveUsers(updated)
       syncCurrentUserSession({ ...selectedUser, ...updatedFields })
 
-      // Sync to Firebase — resolve correct doc ID first
       resolveFirebaseId(selectedUser).then(firebaseDocId => {
         if (!firebaseDocId) {
           console.error('Firebase ID not found for:', selectedUser.email)
@@ -322,7 +310,6 @@ function UserManagement() {
     }
   }
 
-  // Toggle user between active and inactive
   const toggleStatus = (user) => {
     if (currentUser?.role === 'ops') {
       savePendingRequest({
@@ -346,7 +333,6 @@ function UserManagement() {
     })
   }
 
-  // Permanently delete a user
   const deleteUser = (user) => {
     if (!canDeleteUser(user)) { alert('You cannot delete this user!'); return }
 
@@ -362,7 +348,6 @@ function UserManagement() {
     }
   }
 
-  // Export filtered users as CSV
   const exportUsers = () => {
     const csv = [
       ['Name', 'Email', 'Phone', 'Department', 'Role', 'Status', 'Last Login', 'Created'].join(','),
@@ -381,9 +366,8 @@ function UserManagement() {
     a.click()
   }
 
-  // Format last login for display
   const formatLastLogin = (lastLogin) => {
-    if (!lastLogin) return <span style={{ color: '#ccc', fontSize: 12 }}>Never</span>
+    if (!lastLogin) return <span style={{ color: '#94a3b8', fontSize: 12 }}>Never</span>
     const date = new Date(lastLogin)
     const now = new Date()
     const diffMs = now - date
@@ -391,9 +375,9 @@ function UserManagement() {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 60) return <span style={{ color: '#4caf50', fontSize: 12 }}>{diffMins}m ago</span>
-    if (diffHours < 24) return <span style={{ color: '#ff9800', fontSize: 12 }}>{diffHours}h ago</span>
-    return <span style={{ color: '#888', fontSize: 12 }}>{diffDays}d ago</span>
+    if (diffMins < 60) return <span style={{ color: '#10b981', fontSize: 12 }}>{diffMins}m ago</span>
+    if (diffHours < 24) return <span style={{ color: '#f59e0b', fontSize: 12 }}>{diffHours}h ago</span>
+    return <span style={{ color: '#64748b', fontSize: 12 }}>{diffDays}d ago</span>
   }
 
   return (
@@ -412,27 +396,46 @@ function UserManagement() {
 
       <div className={styles.statsGrid}>
         <div className={styles.statCard}>
-          <Users size={24} color="#00d4ff" />
-          <div><span className={styles.statNumber}>{stats.total}</span><span className={styles.statLabel}>Total Users</span></div>
+          <div className={`${styles.statIcon} ${styles.iconBlue}`}>
+            <Users size={20} />
+          </div>
+          <div>
+            <span className={styles.statNumber}>{stats.total}</span>
+            <span className={styles.statLabel}>Total Users</span>
+          </div>
         </div>
         <div className={styles.statCard}>
-          <UserCheck size={24} color="#6bcf7f" />
-          <div><span className={styles.statNumber}>{stats.active}</span><span className={styles.statLabel}>Active</span></div>
+          <div className={`${styles.statIcon} ${styles.iconGreen}`}>
+            <UserCheck size={20} />
+          </div>
+          <div>
+            <span className={styles.statNumber}>{stats.active}</span>
+            <span className={styles.statLabel}>Active</span>
+          </div>
         </div>
         <div className={styles.statCard}>
-          <UserX size={24} color="#ff6b6b" />
-          <div><span className={styles.statNumber}>{stats.inactive}</span><span className={styles.statLabel}>Inactive</span></div>
+          <div className={`${styles.statIcon} ${styles.iconRed}`}>
+            <UserX size={20} />
+          </div>
+          <div>
+            <span className={styles.statNumber}>{stats.inactive}</span>
+            <span className={styles.statLabel}>Inactive</span>
+          </div>
         </div>
         <div className={styles.statCard}>
-          <Shield size={24} color="#9b59b6" />
-          <div><span className={styles.statNumber}>{stats.byRole.super_admin + stats.byRole.admin}</span><span className={styles.statLabel}>Admins</span></div>
+          <div className={`${styles.statIcon} ${styles.iconPurple}`}>
+            <Shield size={20} />
+          </div>
+          <div>
+            <span className={styles.statNumber}>{stats.byRole.super_admin + stats.byRole.admin}</span>
+            <span className={styles.statLabel}>Admins</span>
+          </div>
         </div>
       </div>
 
       <div className={styles.filtersBar}>
         <div className={styles.searchBox}>
           <Search size={18} />
-          {/* ✅ FIX 3: autoComplete="off" — browser autofill search box mein value bharta tha */}
           <input
             type="text"
             placeholder="Search users..."
@@ -441,10 +444,7 @@ function UserManagement() {
             autoComplete="off"
           />
           {searchTerm && (
-            <button
-              onClick={() => setSearchTerm('')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#aaa', padding: '2px 4px' }}
-            >
+            <button className={styles.clearSearch} onClick={() => setSearchTerm('')}>
               ×
             </button>
           )}
@@ -512,20 +512,19 @@ function UserManagement() {
                       : <><UserX size={14} /> Inactive</>}
                   </button>
                 </td>
-                {/* ✅ ADVANCED: Last login shown in table */}
                 <td>{formatLastLogin(user.lastLogin)}</td>
                 <td>
                   <div className={styles.actionButtons}>
-                    <button className={styles.actionBtn} onClick={() => openViewModal(user)} title="View">
+                    <button className={`${styles.actionBtn} ${styles.viewBtn}`} onClick={() => openViewModal(user)} title="View">
                       <Eye size={16} />
                     </button>
                     {canEditUser(user) && (
-                      <button className={styles.actionBtn} onClick={() => openEditModal(user)} title="Edit">
+                      <button className={`${styles.actionBtn} ${styles.editBtn}`} onClick={() => openEditModal(user)} title="Edit">
                         <Edit2 size={16} />
                       </button>
                     )}
                     {canDeleteUser(user) && (
-                      <button className={`${styles.actionBtn} ${styles.danger}`} onClick={() => deleteUser(user)} title="Delete">
+                      <button className={`${styles.actionBtn} ${styles.deleteBtn}`} onClick={() => deleteUser(user)} title="Delete">
                         <Trash2 size={16} />
                       </button>
                     )}
@@ -537,7 +536,7 @@ function UserManagement() {
         </table>
         {filteredUsers.length === 0 && (
           <div className={styles.emptyState}>
-            <Users size={48} color="#ddd" />
+            <Users size={48} />
             <p>No users found</p>
           </div>
         )}
@@ -590,9 +589,8 @@ function UserManagement() {
                   </div>
                   <div className={styles.formGroup}>
                     <label>Email *</label>
-                    {/* ✅ ADVANCED: Warning when editing email of existing user */}
                     {modalMode === 'edit' && formData.email !== selectedUser?.email && (
-                      <small style={{ color: '#ff9800', display: 'block', marginBottom: 4 }}>
+                      <small className={styles.warningText}>
                         ⚠️ Changing email will affect login credentials
                       </small>
                     )}

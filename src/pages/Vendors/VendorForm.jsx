@@ -225,18 +225,6 @@ function VendorForm() {
               </select>
             </div>
 
-            {/* ✅ VENDOR STATUS - Active/Non Active */}
-            <div className={styles.formGroup}>
-              <label>Vendor Status</label>
-              <select 
-                value={formData.vendorStatus} 
-                onChange={(e) => handleChange('vendorStatus', e.target.value)}
-              >
-                {VENDOR_STATUS.map(s => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </select>
-            </div>
 
             <div className={styles.formGroup}>
               <label>Contact Number * <small>(+92 pre-filled)</small></label>

@@ -200,13 +200,7 @@ function Vendors() {
             <span className={styles.statLabel}>Non Active</span>
           </div>
         </div>
-        <div className={styles.statCard}>
-          <div className={styles.filerBadge}>Filer</div>
-          <div>
-            <span className={styles.statValue}>{stats.filerYes}</span>
-            <span className={styles.statLabel}>Yes / {stats.filerNo} No</span>
-          </div>
-        </div>
+
       </div>
 
       {/* Filters */}
